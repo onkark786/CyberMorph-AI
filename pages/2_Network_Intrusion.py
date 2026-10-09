@@ -1,19 +1,28 @@
 from __future__ import annotations
 
-import io
 from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.config import APP_TITLE, NETWORK_DATA_DIR
+from src.analysis_digs import (
+    create_flow_scatter_dig,
+    create_port_attack_distribution_dig,
+    create_threat_gauge,
+)
+from src.config import APP_TITLE, NETWORK_DATA_DIR, PROJECT_ROOT
 from src.network_ids import (
     analyze_network_traffic_df,
     is_network_model_trained,
     load_network_model,
 )
 from src.reporting import generate_csv_bytes
-from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
+from src.ui_theme import (
+    apply_custom_theme,
+    render_analysis_dig_box,
+    render_brand_sidebar,
+    render_page_header,
+)
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | Network Intrusion Detection",
@@ -24,11 +33,17 @@ st.set_page_config(
 apply_custom_theme()
 render_brand_sidebar()
 
+# Page Header
 render_page_header(
     title="Network Intrusion Detection System (NIDS)",
     subtitle="Flow-based telemetry analytics, anomaly classification, and batch intrusion diagnostics.",
     icon="🌐",
 )
+
+# Header Visual Graphic
+net_art_path = PROJECT_ROOT / "assets" / "network_telemetry.jpg"
+if net_art_path.exists():
+    st.image(str(net_art_path), use_container_width=True)
 
 if not is_network_model_trained():
     st.error("⚠️ Network intrusion detection model is not trained yet!")
@@ -97,34 +112,43 @@ if uploaded_file is not None:
             else:
                 st.success("🟢 **Clean Traffic Signature:** No abnormal intrusion patterns detected across evaluated flows.")
 
-            # Visualizations
-            col_chart1, col_chart2 = st.columns(2)
+            # Visual Analysis Digs: Gauge + Distribution
+            st.divider()
+            st.subheader("🎯 Network Threat Posture & Analysis Digs")
+            col_g, col_pie, col_bar = st.columns([1.1, 1, 1])
 
-            with col_chart1:
-                st.markdown("##### Flow Classification Distribution")
+            with col_g:
+                net_gauge = create_threat_gauge(
+                    risk_percentage=summary["attack_percentage"],
+                    title="Traffic Anomaly Rate",
+                )
+                st.plotly_chart(net_gauge, use_container_width=True)
+
+            with col_pie:
+                st.markdown("##### Flow Classification Breakdown")
                 pie_fig = px.pie(
                     names=["Benign", "Attack"],
                     values=[summary["benign_records"], summary["attack_records"]],
                     color=["Benign", "Attack"],
                     color_discrete_map={"Benign": "#38BDF8", "Attack": "#EF4444"},
-                    hole=0.4,
+                    hole=0.45,
                 )
                 pie_fig.update_layout(
                     template="plotly_dark",
                     paper_bgcolor="#1C2541",
                     font=dict(color="#FFFFFF"),
-                    height=300,
-                    margin=dict(l=10, r=10, t=20, b=10),
+                    height=260,
+                    margin=dict(l=10, r=10, t=10, b=10),
                 )
                 st.plotly_chart(pie_fig, use_container_width=True)
 
-            with col_chart2:
+            with col_bar:
                 st.markdown("##### Flow Risk Stratification")
                 bar_fig = px.bar(
-                    x=["Low Risk", "Medium Risk", "High Risk"],
+                    x=["Low", "Medium", "High"],
                     y=[summary["low_risk_flows"], summary["medium_risk_flows"], summary["high_risk_flows"]],
-                    color=["Low Risk", "Medium Risk", "High Risk"],
-                    color_discrete_map={"Low Risk": "#10B981", "Medium Risk": "#F59E0B", "High Risk": "#EF4444"},
+                    color=["Low", "Medium", "High"],
+                    color_discrete_map={"Low": "#10B981", "Medium": "#F59E0B", "High": "#EF4444"},
                     text_auto=True,
                 )
                 bar_fig.update_layout(
@@ -132,18 +156,40 @@ if uploaded_file is not None:
                     paper_bgcolor="#1C2541",
                     plot_bgcolor="#0B132B",
                     font=dict(color="#FFFFFF"),
-                    height=300,
-                    margin=dict(l=10, r=10, t=20, b=10),
-                    yaxis_title="Flow Count",
+                    height=260,
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    yaxis_title="Count",
                     showlegend=False,
                 )
                 st.plotly_chart(bar_fig, use_container_width=True)
+
+            # Deep Analysis Digs: Flow Scatter & Port Breakdown
+            st.divider()
+            st.subheader("🔬 Deep-Dive Flow Telemetry Digs")
+            col_scat, col_port = st.columns([1.2, 1])
+
+            with col_scat:
+                scat_fig = create_flow_scatter_dig(enriched_df)
+                st.plotly_chart(scat_fig, use_container_width=True)
+
+            with col_port:
+                port_fig = create_port_attack_distribution_dig(enriched_df)
+                st.plotly_chart(port_fig, use_container_width=True)
+
+            render_analysis_dig_box(
+                title="Analysis Dig: Interpreting Network Flow Anomalies",
+                explanation="The Flow Telemetry Anomaly Scatter Dig correlates temporal flow behavior with packet throughput:",
+                takeaways=[
+                    "Port Scanning Signatures: Clustered at microsecond durations (<1000 µs) with high packet rates across non-standard ephemeral ports.",
+                    "DoS / DDoS Floods: High packet rates paired with massive forward packet lengths targeting standard web ports (80/443).",
+                    "Benign Browsing: Characterized by variable inter-arrival times, balanced forward/backward segment ratios, and standard TCP window acknowledgments.",
+                ],
+            )
 
             # Enriched Results Table
             st.divider()
             st.subheader("🔍 Classified Network Flows (Enriched Preview)")
 
-            # Select key summary columns for clean viewing
             key_cols = [
                 col for col in [
                     "Destination Port", "Flow Duration", "Total Fwd Packets",

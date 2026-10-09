@@ -1,16 +1,27 @@
 from __future__ import annotations
 
+from pathlib import Path
 import streamlit as st
 
-from src.config import APP_TITLE
+from src.analysis_digs import (
+    create_signal_waterfall_dig,
+    create_threat_gauge,
+    create_url_threat_radar,
+)
+from src.config import APP_TITLE, PROJECT_ROOT
 from src.database import save_analysis
-from src.explainability import create_local_explanation_plot, explain_single_url_prediction
+from src.explainability import explain_single_url_prediction
 from src.phishing import (
     is_model_trained,
     predict_engineered_features,
     predict_url,
 )
-from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
+from src.ui_theme import (
+    apply_custom_theme,
+    render_analysis_dig_box,
+    render_brand_sidebar,
+    render_page_header,
+)
 from src.url_features import UCI_FEATURE_NAMES, get_feature_descriptions
 
 st.set_page_config(
@@ -22,34 +33,40 @@ st.set_page_config(
 apply_custom_theme()
 render_brand_sidebar()
 
+# Page Header
 render_page_header(
-    title="Phishing URL Detection Engine",
-    subtitle="Machine learning-based lexical inspection, risk assessment, and explainable feature signals.",
+    title="Phishing URL Deception & Lexical Scanner",
+    subtitle="Passive lexical inspection, multi-vector threat radar, and explainable signal diagnostics.",
     icon="🎣",
 )
+
+# Header Visual Graphic
+scanner_art_path = PROJECT_ROOT / "assets" / "phishing_scanner.jpg"
+if scanner_art_path.exists():
+    st.image(str(scanner_art_path), use_container_width=True)
 
 if not is_model_trained():
     st.error("⚠️ Phishing detection model is not trained yet!")
     st.info("Train the model by executing `python scripts/train_phishing_model.py` in PowerShell.")
     st.stop()
 
-tab_url, tab_engineered = st.tabs(["🌐 Live URL Analysis", "🔬 Engineered Feature Lab (Academic / UCI)"])
+tab_url, tab_engineered = st.tabs(["🌐 Live URL Telemetry Scanner", "🔬 Academic UCI Feature Lab"])
 
 with tab_url:
     st.markdown("### Safe Lexical URL Evaluation")
     st.caption(
-        "Evaluates domain, path, and protocol characteristics passively without establishing an active remote connection to untrusted servers."
+        "Analyzes domain lexical patterns, host structures, and protocol markers without establishing remote connections to hostile hosts."
     )
 
     url_input = st.text_input(
         "Enter Target Website URL:",
         placeholder="https://secure-login-paypal.com.verify-account.tk",
-        help="Paste a URL or domain. Leading http/https scheme will be defaulted safely if omitted.",
+        help="Paste a URL or domain. Missing http/https scheme will be defaulted safely.",
     )
 
     col_btn, col_sample = st.columns([1, 3])
     with col_btn:
-        analyze_clicked = st.button("🔍 Analyze URL", use_container_width=True)
+        analyze_clicked = st.button("🔍 Scan & Analyze URL", use_container_width=True)
     with col_sample:
         st.markdown(
             "**Quick Test Samples:** "
@@ -102,33 +119,61 @@ with tab_url:
                 # Recommended Action Alert
                 if is_phish:
                     st.error(
-                        "🛑 **Threat Alert: High Risk Phishing Indicators Identified!**\n\n"
-                        "- **Recommendation:** Do NOT visit this link or enter personal credentials.\n"
-                        "- **Defensive Action:** Block domain at firewall/DNS gateway and report to security operations."
+                        "🛑 **Threat Alert: Weaponized Phishing Signatures Identified!**\n\n"
+                        "- **Recommendation:** Do NOT enter credentials or download attachments from this domain.\n"
+                        "- **Defensive Action:** Quarantine URL and add domain to organizational perimeter blocklist."
                     )
                 else:
                     st.success(
                         "✅ **Low Risk: Conforms to Standard Legitimate Naming Conventions.**\n\n"
-                        "- **Notice:** While lexical structure appears normal, always verify SSL certificate authenticity before submitting confidential data."
+                        "- **Notice:** While lexical structure conforms to benign baselines, always inspect SSL certificate authenticity."
                     )
 
-                # Local Explanation Breakdown
-                st.subheader("💡 Explainable Prediction Signals")
+                # Deep Analysis Digs: Gauge + Radar
+                st.divider()
+                st.subheader("🎯 Visual Analysis Digs")
+
+                threat_pct = (result["confidence"] * 100) if is_phish else ((1.0 - result["confidence"]) * 100)
+                col_g, col_rad = st.columns([1, 1.2])
+
+                with col_g:
+                    gauge_fig = create_threat_gauge(
+                        risk_percentage=round(threat_pct, 1),
+                        title="URL Threat Probability Score",
+                    )
+                    st.plotly_chart(gauge_fig, use_container_width=True)
+
+                with col_rad:
+                    radar_fig = create_url_threat_radar(result["extracted_features"])
+                    st.plotly_chart(radar_fig, use_container_width=True)
+
+                render_analysis_dig_box(
+                    title="Analysis Dig: Interpreting the 5-Pillar Threat Radar",
+                    explanation="The Threat Radar maps the target across five critical deception vectors (0 = clean, 100 = extreme risk):",
+                    takeaways=[
+                        "Host / IP Deception: Spikes when an IP address replaces a trusted domain to bypass reputation lookups.",
+                        "Domain Spoofing: Flags excessive subdomain nesting or hyphens imitating reputable brand names.",
+                        "Protocol / SSL Risk: Highlights plain HTTP, self-signed tokens, or misleading 'https' domain substrings.",
+                        "Lexical Obfuscation: Detects unusually long URLs (>75 chars) and shortened redirect services.",
+                        "Redirection Masking: Highlights '@' symbols and '//' path tricks used to divert traffic.",
+                    ],
+                )
+
+                # Feature Impact Waterfall Dig
+                st.divider()
+                st.subheader("📊 Signal Impact Waterfall Dig")
                 explanation_df = explain_single_url_prediction(
                     result["extracted_features"],
                     result["predicted_label"],
                     top_n=8,
                 )
 
-                col_exp_chart, col_exp_table = st.columns([1, 1])
-                with col_exp_chart:
-                    exp_fig = create_local_explanation_plot(
-                        explanation_df,
-                        title=f"Feature Impact on Classification ({result['url']})",
-                    )
-                    st.plotly_chart(exp_fig, use_container_width=True)
+                col_wf, col_diag = st.columns([1.2, 1])
+                with col_wf:
+                    wf_fig = create_signal_waterfall_dig(explanation_df)
+                    st.plotly_chart(wf_fig, use_container_width=True)
 
-                with col_exp_table:
+                with col_diag:
                     st.markdown("##### Detailed Signal Diagnostics")
                     for pt in result["explanation_points"]:
                         st.markdown(f"- {pt}")

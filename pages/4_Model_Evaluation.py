@@ -10,7 +10,12 @@ from src.metrics import (
 )
 from src.network_ids import get_network_metadata, is_network_model_trained
 from src.phishing import get_phishing_metadata, is_model_trained as is_phishing_model_trained
-from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
+from src.ui_theme import (
+    apply_custom_theme,
+    render_analysis_dig_box,
+    render_brand_sidebar,
+    render_page_header,
+)
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | Model Evaluation",
@@ -25,6 +30,21 @@ render_page_header(
     title="Model Evaluation & Rigorous Benchmark Validation",
     subtitle="Empirical performance metrics measured strictly on held-out test partitions (No data leakage).",
     icon="📊",
+)
+
+render_analysis_dig_box(
+    title="Analysis Dig: How to Evaluate Cybersecurity Models",
+    explanation=(
+        "In cybersecurity, raw accuracy can be deceptive due to severe class imbalance. "
+        "A model that misses zero attacks (100% recall) but raises constant false alarms (low precision) induces analyst fatigue. "
+        "CyberMorph AI evaluates models primarily on their F1-score on held-out test data."
+    ),
+    takeaways=[
+        "Accuracy: Overall percentage of correct predictions across benign and malicious categories.",
+        "Precision: When the model predicts a threat, how often is it right? High precision avoids false alarms.",
+        "Recall: Out of all real threats present, how many did the model detect? High recall prevents security breaches.",
+        "F1-Score: The harmonic mean of precision and recall, balancing detection completeness against alert quality.",
+    ],
 )
 
 tab_phish, tab_net, tab_comp = st.tabs([
@@ -76,12 +96,6 @@ with tab_phish:
                 """
             )
 
-        st.info(
-            "💡 **Understanding Errors in Phishing Detection:**\n\n"
-            "- **False Positive:** A legitimate website incorrectly flagged as phishing (causes user inconvenience).\n"
-            "- **False Negative:** A phishing site misclassified as legitimate (**Critical Hazard** — leaves users vulnerable to credential theft)."
-        )
-
 with tab_net:
     st.subheader("CIC-IDS2017 Flow Benchmark Evaluation")
     if not is_network_model_trained():
@@ -125,12 +139,6 @@ with tab_net:
                 Attack ({n_meta.get('class_distribution', {}).get('attack', 'N/A')})
                 """
             )
-
-        st.info(
-            "💡 **Understanding Errors in Network Intrusion Detection:**\n\n"
-            "- **False Positive:** Benign traffic classified as an attack (generates alert fatigue for SOC analysts).\n"
-            "- **False Negative:** Malicious intrusion packet passing undetected as benign (**Severe Threat** — allows network penetration)."
-        )
 
 with tab_comp:
     st.subheader("Cross-Algorithm Model Selection Comparison")

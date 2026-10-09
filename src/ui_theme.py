@@ -1,176 +1,183 @@
 from __future__ import annotations
 
+from pathlib import Path
 import streamlit as st
-from src.config import APP_SUBTITLE, APP_TITLE
+from src.config import APP_SUBTITLE, APP_TITLE, PROJECT_ROOT
+
+ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 def apply_custom_theme():
-    """Inject premium dark cybersecurity styling across the app."""
+    """Inject ultra-modern high-tech SOC cybersecurity CSS styles into Streamlit."""
     custom_css = """
     <style>
-    :root {
-        --bg: #071120;
-        --bg-2: #0d1b2a;
-        --panel: rgba(15, 23, 42, 0.92);
-        --panel-strong: rgba(17, 24, 39, 0.96);
-        --panel-soft: rgba(30, 41, 59, 0.9);
-        --border: rgba(148, 163, 184, 0.18);
-        --primary: #4cc9f0;
-        --primary-strong: #00f2fe;
-        --accent: #5eead4;
-        --success: #34d399;
-        --warning: #fbbf24;
-        --danger: #f87171;
-        --info: #60a5fa;
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --shadow: rgba(15, 23, 42, 0.32);
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    /* Global Typography and App Surface */
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .stApp {
-        background: radial-gradient(circle at top left, rgba(76, 201, 240, 0.10), transparent 28%),
-                    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-        color: var(--text);
-        font-family: 'Segoe UI', Inter, sans-serif;
+        background-color: #080D1A;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.07) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(67, 100, 247, 0.08) 0px, transparent 50%),
+            linear-gradient(rgba(8, 13, 26, 0.95), rgba(8, 13, 26, 0.95));
+        color: #F8FAFC;
     }
 
+    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background: rgba(7, 17, 32, 0.96);
-        border-right: 1px solid var(--border);
+        background: linear-gradient(180deg, #050811 0%, #0B1124 100%) !important;
+        border-right: 1px solid rgba(0, 242, 254, 0.15);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
     }
 
-    div[data-testid="stSidebarNav"] {
-        gap: 0.4rem;
-    }
-
-    .stSidebar .stPageLink {
-        border-radius: 10px;
-        padding: 0.65rem 0.8rem;
-        margin: 0.1rem 0;
-        color: var(--text);
-        border: 1px solid transparent;
-    }
-
-    .stSidebar .stPageLink:hover {
-        background: rgba(76, 201, 240, 0.08);
-        border-color: rgba(76, 201, 240, 0.18);
-    }
-
-    .stSidebar .stPageLink[data-selected="true"] {
-        background: linear-gradient(90deg, rgba(76, 201, 240, 0.14), rgba(94, 234, 212, 0.08));
-        border-color: rgba(76, 201, 240, 0.38);
-        color: #ffffff;
-        font-weight: 600;
-    }
-
+    /* Metric Cards - Glassmorphism & Neon Edge */
     div[data-testid="stMetric"] {
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(17, 24, 39, 0.96));
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1rem 1.1rem;
-        box-shadow: 0 10px 25px var(--shadow);
+        background: rgba(18, 26, 49, 0.75) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(58, 80, 107, 0.5) !important;
+        border-radius: 12px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     div[data-testid="stMetric"]:hover {
-        border-color: rgba(76, 201, 240, 0.42);
-        transform: translateY(-1px);
-        transition: all 0.2s ease;
+        transform: translateY(-2px);
+        border-color: #00F2FE !important;
+        box-shadow: 0 10px 28px rgba(0, 242, 254, 0.15) !important;
     }
 
-    .cyber-hero {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.88));
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 1.3rem 1.5rem;
-        box-shadow: 0 16px 32px rgba(2, 6, 23, 0.34);
-        margin-bottom: 1.2rem;
+    div[data-testid="stMetric"] label {
+        color: #94A3B8 !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .cyber-hero-title {
-        font-size: clamp(2rem, 2.6vw, 2.6rem);
-        font-weight: 800;
-        color: #f8fafc;
-        margin: 0;
-        letter-spacing: -0.04em;
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        font-size: 1.8rem !important;
     }
 
-    .cyber-hero-subtitle {
-        margin-top: 0.4rem;
-        color: var(--muted);
-        font-size: 0.98rem;
-    }
-
-    .cyber-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.45rem 0.8rem;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: rgba(15, 23, 42, 0.8);
-        color: var(--text);
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-
-    .pill-ready { border-color: rgba(52, 211, 153, 0.55); background: rgba(16, 185, 129, 0.12); color: #d1fae5; }
-    .pill-warn { border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.10); color: #fef3c7; }
-    .pill-danger { border-color: rgba(248, 113, 113, 0.55); background: rgba(248, 113, 113, 0.10); color: #fee2e2; }
-
-    .section-shell {
-        background: rgba(15, 23, 42, 0.75);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1rem 1.1rem;
-        box-shadow: 0 12px 22px rgba(2, 6, 23, 0.2);
-        margin-bottom: 1rem;
-    }
-
-    .section-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #f8fafc;
-        margin: 0 0 0.9rem 0;
-        letter-spacing: -0.02em;
-    }
-
+    /* Primary Futuristic Action Buttons */
     .stButton > button {
-        background: linear-gradient(90deg, rgba(79, 172, 254, 1), rgba(0, 242, 254, 1));
-        color: #03111d !important;
-        border: none;
-        border-radius: 12px;
-        font-weight: 700;
-        padding: 0.7rem 1.1rem;
-        box-shadow: 0 10px 24px rgba(79, 172, 254, 0.22);
+        background: linear-gradient(135deg, #0052D4 0%, #4364F7 50%, #00F2FE 100%) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        padding: 10px 22px !important;
+        box-shadow: 0 4px 18px rgba(0, 82, 212, 0.4) !important;
+        letter-spacing: 0.3px;
+        transition: all 0.2s ease !important;
     }
 
     .stButton > button:hover {
-        filter: brightness(1.05);
+        transform: translateY(-1px) scale(1.01) !important;
+        box-shadow: 0 6px 24px rgba(0, 242, 254, 0.5) !important;
     }
 
-    .stDownloadButton > button {
-        background: linear-gradient(90deg, rgba(13, 148, 136, 0.9), rgba(45, 212, 191, 0.9));
-        color: #ecfeff !important;
+    /* Analysis Dig Callout Cards */
+    .dig-card {
+        background: rgba(22, 33, 62, 0.65);
+        border: 1px solid rgba(0, 242, 254, 0.25);
+        border-left: 5px solid #00F2FE;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin: 14px 0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     }
 
-    div[data-testid="stDataFrame"] {
+    .dig-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #00F2FE;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    .dig-body {
+        font-size: 0.88rem;
+        color: #CBD5E1;
+        line-height: 1.5;
+    }
+
+    /* Risk Badges */
+    .cyber-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .badge-high {
+        background: rgba(239, 68, 68, 0.18);
+        color: #EF4444;
+        border: 1px solid #EF4444;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .badge-medium {
+        background: rgba(245, 158, 11, 0.18);
+        color: #F59E0B;
+        border: 1px solid #F59E0B;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    .badge-low {
+        background: rgba(16, 185, 129, 0.18);
+        color: #10B981;
+        border: 1px solid #10B981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Tabs Styling */
+    div[data-baseweb="tab-list"] {
+        background-color: #0F172A;
+        border-radius: 10px;
+        padding: 4px;
+        border: 1px solid #1E293B;
+    }
+
+    div[data-baseweb="tab"] {
+        border-radius: 8px;
+        font-weight: 600;
+        color: #94A3B8;
+        padding: 8px 16px;
+    }
+
+    div[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #1E293B 0%, #2A3B5C 100%) !important;
+        color: #00F2FE !important;
+        border: 1px solid rgba(0, 242, 254, 0.3) !important;
+    }
+
+    /* Clean Code and Json */
+    div[data-testid="stJson"], pre {
+        background-color: #0B1120 !important;
+        border: 1px solid #1E293B !important;
+        border-radius: 8px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    /* Image rounding */
+    div[data-testid="stImage"] img {
         border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid var(--border);
-    }
-
-    hr {
-        border-color: rgba(148, 163, 184, 0.22) !important;
-        margin: 1.4rem 0 !important;
-    }
-
-    .cyber-alert {
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        border-left: 4px solid var(--primary);
-        border-radius: 14px;
-        padding: 0.85rem 1rem;
-        color: var(--text);
+        border: 1px solid rgba(58, 80, 107, 0.5);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
     }
     </style>
     """
@@ -178,43 +185,72 @@ def apply_custom_theme():
 
 
 def render_brand_sidebar():
-    """Render a compact cybersecurity brand block in the sidebar."""
+    """Render consistent branding and live system telemetry in the sidebar."""
     with st.sidebar:
         st.markdown(
             f"""
-            <div style="text-align: center; padding: 0.6rem 0 0.8rem 0;">
-                <div style="font-size: 2.2rem; margin-bottom: 0.2rem;">🛡️</div>
-                <div style="font-size: 1.2rem; font-weight: 800; color: #7dd3fc; letter-spacing: 0.04em;">{APP_TITLE}</div>
-                <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 0.2rem;">{APP_SUBTITLE}</div>
+            <div style="text-align: center; padding: 14px 0 16px 0;">
+                <div style="font-size: 2.8rem; filter: drop-shadow(0 0 12px #00F2FE);">🛡️</div>
+                <div style="font-size: 1.4rem; font-weight: 800; background: linear-gradient(90deg, #00F2FE, #4FACFE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.5px;">
+                    {APP_TITLE}
+                </div>
+                <div style="font-size: 0.76rem; color: #94A3B8; margin-top: 2px;">
+                    {APP_SUBTITLE}
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.caption("SOC / AI Defense Workspace")
+
+        st.markdown(
+            """
+            <div style="background: rgba(18, 26, 49, 0.6); border: 1px solid #2A3B5C; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
+                <div style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Engine Status</div>
+                <div style="font-size: 0.85rem; color: #10B981; font-weight: 600; margin-top: 2px;">● ALL SYSTEMS ONLINE</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.divider()
+
+        st.caption("🔒 Architecture: **Explainable Cyber AI**")
+        st.caption("⚡ Model Engine: **Scikit-Learn Pipelines**")
+        st.caption("💾 Persistent Store: **SQLite3 Storage**")
+        st.caption("📑 Generator: **ReportLab PDF Engine**")
         st.divider()
 
 
 def render_page_header(title: str, subtitle: str, icon: str = "🛡️"):
-    """Render a premium hero header block for all pages."""
+    """Standardized glowing header block."""
     st.markdown(
         f"""
-        <div class="cyber-hero">
-            <div style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.4rem;">
-                <div style="font-size:1.8rem;">{icon}</div>
-                <div class="cyber-hero-title">{title}</div>
-            </div>
-            <div class="cyber-hero-subtitle">{subtitle}</div>
+        <div style="margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid rgba(58, 80, 107, 0.4);">
+            <h1 style="display: flex; align-items: center; gap: 12px; margin: 0; color: #FFFFFF; font-size: 2.1rem; font-weight: 800;">
+                <span style="filter: drop-shadow(0 0 8px #00F2FE);">{icon}</span> {title}
+            </h1>
+            <p style="color: #94A3B8; font-size: 1.02rem; margin-top: 8px; line-height: 1.4;">
+                {subtitle}
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_status_pill(label: str, is_ready: bool, ready_text: str, not_ready_text: str) -> None:
-    """Render a reusable status pill."""
-    status_class = "pill-ready" if is_ready else "pill-warn"
-    status_text = ready_text if is_ready else not_ready_text
+def render_analysis_dig_box(title: str, explanation: str, takeaways: list[str]):
+    """Renders a styled analysis dig card with key visual insights for beginners."""
+    takeaways_html = "".join([f"<li style='margin-bottom: 4px;'>{t}</li>" for t in takeaways])
     st.markdown(
-        f'<div class="cyber-pill {status_class}"><span>{label}</span><span>•</span><span>{status_text}</span></div>',
+        f"""
+        <div class="dig-card">
+            <div class="dig-title">🔍 {title}</div>
+            <div class="dig-body">
+                <p style="margin-bottom: 8px;">{explanation}</p>
+                <ul style="margin: 0; padding-left: 20px; color: #E2E8F0; font-size: 0.85rem;">
+                    {takeaways_html}
+                </ul>
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
