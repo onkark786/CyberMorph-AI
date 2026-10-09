@@ -1,0 +1,49 @@
+# Python environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local database & logs
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.log
+
+# Keep dataset directories structure
+!data/phishing/.gitkeep
+!data/network/.gitkeep
+!models/phishing/.gitkeep
+!models/network/.gitkeep
+!reports/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
