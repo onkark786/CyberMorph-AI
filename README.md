@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🛡️ CyberMorph AI
 ### Intelligent Cyber Threat Detection & Analytics
 > **Official Academic Title:** *“CyberMorph AI: An Explainable Machine Learning-Based Framework for Phishing Detection, Network Intrusion Detection and Cyber Threat Analytics”*
@@ -215,3 +216,7 @@ Empirical metrics measured strictly on held-out test sets (25% stratified test p
 - The codebase was recently updated to improve SOC dashboard layout, page validations, CSV/PDF export robustness, and safer history viewing.
 - All changes were validated offline without launching the Streamlit server. Run `python -m pytest -q` in the `.venv` to reproduce the test results.
 - The SQLite database and pre-trained model artifacts are preserved; no destructive operations (database purge or artifact deletion) were performed by these updates.
+=======
+# CyberMorph-AI
+Explainable ML framework for phishing detection, network intrusion detection, and cyber threat analytics.
+>>>>>>> bd5020848eb17e595100d679abfe0d0745feb2b9
