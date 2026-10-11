@@ -201,7 +201,7 @@ Empirical metrics measured strictly on held-out test sets (25% stratified test p
 4. **Network Intrusion Telemetry (`2_Network_Intrusion.py`):** Uploading `sample_test_flows.csv`, displaying flow classifications and risk distribution.
 5. **Explainable AI Center (`3_Explainable_AI.py`):** Showing global feature importance horizontal bar chart and local signal waterfalls.
 6. **Model Evaluation Center (`4_Model_Evaluation.py`):** Displaying Plotly interactive confusion matrices and cross-algorithm bar charts.
-7. **Security Analysis History (`5_Analysis_History.py`):** Demonstrating filtering, keyword search, and audit trail record deletion.
+7. **Security Analysis History (`5_Analysis_History.py`):** Demonstrating filtering, keyword search, and detailed audit trail views (deletion of historical records is intentionally gated and not exposed by default).
 8. **Compiled PDF Report (`6_Reports.py`):** Generated PDF threat intelligence report opened in a PDF viewer.
 
 ---
@@ -209,3 +209,9 @@ Empirical metrics measured strictly on held-out test sets (25% stratified test p
 ## ⚠️ 9. Operational Disclaimer & Academic Scope
 
 *CyberMorph AI is an educational defensive engineering framework. The predictive models are trained on historical benchmark datasets (UCI Phishing Websites and CIC-IDS2017). An inference classification of 'BENIGN' or 'Legitimate' does not constitute an absolute guarantee of network security. Enterprise defense requires multi-layered defense-in-depth, security updates, signature-based controls, and human analyst validation.*
+
+## 🧭 Development & Offline Validation Notes
+
+- The codebase was recently updated to improve SOC dashboard layout, page validations, CSV/PDF export robustness, and safer history viewing.
+- All changes were validated offline without launching the Streamlit server. Run `python -m pytest -q` in the `.venv` to reproduce the test results.
+- The SQLite database and pre-trained model artifacts are preserved; no destructive operations (database purge or artifact deletion) were performed by these updates.

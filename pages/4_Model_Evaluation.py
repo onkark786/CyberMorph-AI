@@ -10,12 +10,7 @@ from src.metrics import (
 )
 from src.network_ids import get_network_metadata, is_network_model_trained
 from src.phishing import get_phishing_metadata, is_model_trained as is_phishing_model_trained
-from src.ui_theme import (
-    apply_custom_theme,
-    render_analysis_dig_box,
-    render_brand_sidebar,
-    render_page_header,
-)
+from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | Model Evaluation",
@@ -30,21 +25,6 @@ render_page_header(
     title="Model Evaluation & Rigorous Benchmark Validation",
     subtitle="Empirical performance metrics measured strictly on held-out test partitions (No data leakage).",
     icon="📊",
-)
-
-render_analysis_dig_box(
-    title="Analysis Dig: How to Evaluate Cybersecurity Models",
-    explanation=(
-        "In cybersecurity, raw accuracy can be deceptive due to severe class imbalance. "
-        "A model that misses zero attacks (100% recall) but raises constant false alarms (low precision) induces analyst fatigue. "
-        "CyberMorph AI evaluates models primarily on their F1-score on held-out test data."
-    ),
-    takeaways=[
-        "Accuracy: Overall percentage of correct predictions across benign and malicious categories.",
-        "Precision: When the model predicts a threat, how often is it right? High precision avoids false alarms.",
-        "Recall: Out of all real threats present, how many did the model detect? High recall prevents security breaches.",
-        "F1-Score: The harmonic mean of precision and recall, balancing detection completeness against alert quality.",
-    ],
 )
 
 tab_phish, tab_net, tab_comp = st.tabs([
@@ -79,14 +59,14 @@ with tab_phish:
                     class_names=["Phishing", "Legitimate"],
                     title="Phishing Confusion Matrix",
                 )
-                st.plotly_chart(fig_cm, use_container_width=True)
+                st.plotly_chart(fig_cm, width='stretch')
 
         with col_report:
             st.markdown("##### Detailed Classification Report")
             rep_data = p_metrics.get("classification_report")
             if rep_data:
                 rep_df = format_classification_report_table(rep_data)
-                st.dataframe(rep_df, use_container_width=True)
+                st.dataframe(rep_df, width='stretch')
 
             st.markdown(
                 f"""
@@ -95,6 +75,12 @@ with tab_phish:
                 - **Evaluation Methodology:** Stratified split with reproducible seed (`random_state=42`).
                 """
             )
+
+        st.info(
+            "💡 **Understanding Errors in Phishing Detection:**\n\n"
+            "- **False Positive:** A legitimate website incorrectly flagged as phishing (causes user inconvenience).\n"
+            "- **False Negative:** A phishing site misclassified as legitimate (**Critical Hazard** — leaves users vulnerable to credential theft)."
+        )
 
 with tab_net:
     st.subheader("CIC-IDS2017 Flow Benchmark Evaluation")
@@ -122,23 +108,29 @@ with tab_net:
                     class_names=["Benign", "Attack"],
                     title="Network IDS Confusion Matrix",
                 )
-                st.plotly_chart(fig_ncm, use_container_width=True)
+                st.plotly_chart(fig_ncm, width='stretch')
 
         with col_nrep:
             st.markdown("##### Detailed Classification Report")
             n_rep_data = n_metrics.get("classification_report")
             if n_rep_data:
                 n_rep_df = format_classification_report_table(n_rep_data)
-                st.dataframe(n_rep_df, use_container_width=True)
+                st.dataframe(n_rep_df, width='stretch')
 
             st.markdown(
                 f"""
                 - **Training Partition:** {n_meta.get('train_samples', 'N/A')} flows (75%)
                 - **Held-out Test Partition:** {n_meta.get('test_samples', 'N/A')} flows (25%)
                 - **Class Distribution:** Benign ({n_meta.get('class_distribution', {}).get('benign', 'N/A')}), "
-                Attack ({n_meta.get('class_distribution', {}).get('attack', 'N/A')})
+                f"Attack ({n_meta.get('class_distribution', {}).get('attack', 'N/A')})"
                 """
             )
+
+        st.info(
+            "💡 **Understanding Errors in Network Intrusion Detection:**\n\n"
+            "- **False Positive:** Benign traffic classified as an attack (generates alert fatigue for SOC analysts).\n"
+            "- **False Negative:** Malicious intrusion packet passing undetected as benign (**Severe Threat** — allows network penetration)."
+        )
 
 with tab_comp:
     st.subheader("Cross-Algorithm Model Selection Comparison")
@@ -155,7 +147,7 @@ with tab_comp:
             meta_target["all_models"],
             title=f"Algorithm Benchmark Comparison — {domain_sel}",
         )
-        st.plotly_chart(comp_fig, use_container_width=True)
+        st.plotly_chart(comp_fig, width='stretch')
 
         st.markdown("##### Benchmark Metrics Summary Table")
         table_rows = []
@@ -167,6 +159,6 @@ with tab_comp:
                 "Recall": f"{m_vals.get('recall', 0.0):.4f}",
                 "F1-Score": f"{m_vals.get('f1_score', 0.0):.4f}",
             })
-        st.dataframe(table_rows, use_container_width=True)
+        st.dataframe(table_rows, width='stretch')
     else:
         st.info("Full multi-model evaluation data will appear once both training pipelines have run.")

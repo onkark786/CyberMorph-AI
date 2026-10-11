@@ -46,7 +46,7 @@ with col_pdf:
         """
     )
 
-    if st.button("🔨 Compile PDF Security Report", use_container_width=True):
+    if st.button("🔨 Compile PDF Security Report"):
         with st.spinner("Compiling ReportLab PDF document..."):
             pdf_bytes = generate_security_pdf_report(
                 overview_stats=stats,
@@ -63,7 +63,6 @@ with col_pdf:
             data=st.session_state["cached_pdf"],
             file_name="CyberMorph_AI_Security_Report.pdf",
             mime="application/pdf",
-            use_container_width=True,
         )
 
 with col_csv:
@@ -86,7 +85,6 @@ with col_csv:
             data=hist_csv,
             file_name="cybermorph_full_history.csv",
             mime="text/csv",
-            use_container_width=True,
         )
 
     # Export Model Evaluation Metrics
@@ -120,7 +118,6 @@ with col_csv:
             data=eval_csv,
             file_name="cybermorph_model_benchmarks.csv",
             mime="text/csv",
-            use_container_width=True,
         )
 
 st.divider()
@@ -136,6 +133,6 @@ with st.expander("📋 Preview Recent Audit Trail Included in Report"):
     if recent_records:
         st.dataframe(pd.DataFrame(recent_records)[[
             "id", "timestamp", "analysis_type", "input_summary", "predicted_class", "risk_level"
-        ]], use_container_width=True)
+        ]], width='stretch')
     else:
         st.write("No recorded events currently in database.")

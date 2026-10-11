@@ -2,10 +2,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from src.analysis_digs import (
-    create_signal_waterfall_dig,
-    create_url_threat_radar,
-)
 from src.config import APP_TITLE
 from src.explainability import (
     create_feature_importance_plot,
@@ -19,12 +15,7 @@ from src.phishing import (
     load_phishing_model,
     predict_url,
 )
-from src.ui_theme import (
-    apply_custom_theme,
-    render_analysis_dig_box,
-    render_brand_sidebar,
-    render_page_header,
-)
+from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
 from src.url_features import get_feature_descriptions
 
 st.set_page_config(
@@ -42,17 +33,14 @@ render_page_header(
     icon="💡",
 )
 
-render_analysis_dig_box(
-    title="Analysis Dig: Why Explainability Matters in Cybersecurity",
-    explanation=(
-        "Machine learning models operating as opaque 'black boxes' risk generating alert fatigue or missing zero-day exploits. "
-        "CyberMorph AI applies dual-level interpretability: Global Interpretability (identifying universal model weights) "
-        "and Local Interpretability (explaining why a specific URL or packet was flagged)."
-    ),
-    takeaways=[
-        "Global XAI reveals which architectural features dominate classifier decisions across thousands of training flows.",
-        "Local XAI pinpoints the exact attributes that escalated or mitigated threat risk for an individual investigation.",
-    ],
+st.markdown(
+    """
+    > [!NOTE]
+    > **Why Explainability Matters in Cybersecurity:**
+    > Machine learning models operating as opaque 'black boxes' can misclassify zero-day variations or exhibit biased shortcuts.
+    > CyberMorph AI applies dual-level interpretability: **Global Interpretability** (which signals the model relies on overall)
+    > and **Local Interpretability** (why a specific URL or packet was flagged).
+    """
 )
 
 tab_global, tab_local, tab_academic = st.tabs([
@@ -83,7 +71,7 @@ with tab_global:
                 imp_df,
                 title="Global Feature Importance — Phishing Detection Pipeline",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             with st.expander("📋 Tabular Feature Importance Weights"):
                 st.dataframe(imp_df, use_container_width=True)
@@ -99,7 +87,7 @@ with tab_global:
                 imp_df,
                 title="Global Feature Importance — Network Intrusion Detection Pipeline",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             with st.expander("📋 Tabular Feature Importance Weights"):
                 st.dataframe(imp_df, use_container_width=True)
@@ -113,7 +101,7 @@ with tab_local:
         value="http://192.168.1.55/update-security/paypal-login.php",
     )
 
-    if st.button("Generate Local Explanations", use_container_width=True):
+    if st.button("Generate Local Explanations"):
         if not is_phishing_model_trained():
             st.error("Phishing model required for local URL explanation.")
         else:
@@ -126,16 +114,13 @@ with tab_local:
                 top_n=10,
             )
 
-            col_wf, col_radar = st.columns([1.2, 1])
-            with col_wf:
-                wf_fig = create_signal_waterfall_dig(exp_df)
-                st.plotly_chart(wf_fig, use_container_width=True)
+            fig_local = create_local_explanation_plot(
+                exp_df,
+                title=f"Instance Explanation for {res['url']}",
+            )
+            st.plotly_chart(fig_local, use_container_width=True)
 
-            with col_radar:
-                radar_fig = create_url_threat_radar(res["extracted_features"])
-                st.plotly_chart(radar_fig, use_container_width=True)
-
-            st.markdown("##### Detailed Feature Attribution Matrix")
+            st.markdown("##### Feature Explanations")
             st.dataframe(exp_df[["Signal Name", "Observed Value", "Status", "Impact on Prediction", "Context"]], use_container_width=True)
 
 with tab_academic:

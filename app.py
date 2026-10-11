@@ -1,25 +1,24 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
+
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from src.analysis_digs import create_threat_gauge
-from src.config import APP_SUBTITLE, APP_TITLE, PROJECT_ROOT
+from src.config import APP_TITLE
 from src.database import get_analysis_history, get_overview_stats
 from src.network_ids import is_network_model_trained
 from src.phishing import is_model_trained as is_phishing_model_trained
 from src.ui_theme import (
     apply_custom_theme,
-    render_analysis_dig_box,
     render_brand_sidebar,
     render_page_header,
+    render_status_pill,
 )
 
 st.set_page_config(
-    page_title=f"{APP_TITLE} | Security Operations Center",
+    page_title=f"{APP_TITLE} | Security Overview",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -28,170 +27,232 @@ st.set_page_config(
 apply_custom_theme()
 render_brand_sidebar()
 
-# Visual Hero Banner
-banner_path = PROJECT_ROOT / "assets" / "hero_banner.jpg"
-if banner_path.exists():
-    st.image(str(banner_path), use_container_width=True)
-
-# Page Header
 now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 render_page_header(
-    title=f"{APP_TITLE} — Security Operations Center",
-    subtitle=f"Enterprise-grade cyber threat analytics, machine learning telemetry, and audit trail • System Time: {now_str}",
+    title="CyberMorph AI",
+    subtitle="Explainable AI-Powered Cyber Threat Detection • SOC telemetry and threat intelligence overview",
     icon="🛡️",
 )
 
-# Fetch stats from SQLite
 stats = get_overview_stats()
 phishing_ready = is_phishing_model_trained()
 network_ready = is_network_model_trained()
 
-# Model Status Badges & Engine Heartbeat
-col_stat1, col_stat2 = st.columns(2)
-with col_stat1:
-    if phishing_ready:
-        st.success("🟢 **Phishing Engine:** Active (Random Forest / UCI Benchmark)")
-    else:
-        st.warning("🟡 **Phishing Engine:** Untrained (Run training script)")
+st.markdown(
+    f"""
+    <div class="cyber-alert" style="margin-bottom: 1rem;">
+        <strong>Security operations snapshot</strong>
+        <span style="color: #94a3b8; margin-left: 0.6rem;">Last refresh: {now_str}</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-with col_stat2:
-    if network_ready:
-        st.success("🟢 **Network IDS Engine:** Active (Logistic Regression / CIC-IDS2017)")
-    else:
-        st.warning("🟡 **Network IDS Engine:** Untrained (Run training script)")
-
-st.divider()
-
-# High-Level Metric Cards
-st.subheader("📊 Key Threat Telemetry")
-m1, m2, m3, m4, m5, m6 = st.columns(6)
-m1.metric("Total Sessions", stats["total_analyses"], help="Total distinct analysis runs recorded in database")
-m2.metric("URLs Evaluated", stats["total_phishing"], help="Number of URLs checked for phishing")
-m3.metric("Phishing Flagged", stats["malicious_phishing"], delta=f"{stats['malicious_phishing']} threats", delta_color="inverse")
-m4.metric("Flows Analyzed", stats["total_network_flows"], help="Total individual network flow packets examined")
-m5.metric("Intrusions Detected", stats["attack_network_flows"], delta=f"{stats['attack_network_flows']} attacks", delta_color="inverse")
-m6.metric("High-Risk Incidents", stats["high_risk_count"], delta_color="inverse")
-
-st.divider()
-
-# Visual Threat Gauge & Threat Distribution Digs
-st.subheader("🎯 Threat Posture & Analysis Digs")
-col_gauge, col_pie1, col_pie2 = st.columns([1.1, 1, 1])
-
-# Threat posture percentage calculation
-total_items = max(1, stats["total_phishing"] + stats["total_network_flows"])
-total_threats = stats["malicious_phishing"] + stats["attack_network_flows"]
-threat_ratio = (total_threats / total_items) * 100.0 if total_items > 0 else 0.0
-
-with col_gauge:
-    gauge_fig = create_threat_gauge(
-        risk_percentage=round(threat_ratio, 1),
-        title="Aggregate Threat Posture",
+status_col1, status_col2 = st.columns(2)
+with status_col1:
+    render_status_pill(
+        "Phishing Model",
+        phishing_ready,
+        "Active / UCI benchmark",
+        "Not trained",
     )
-    st.plotly_chart(gauge_fig, use_container_width=True)
+with status_col2:
+    render_status_pill(
+        "Network IDS",
+        network_ready,
+        "Active / CIC-IDS2017",
+        "Not trained",
+    )
 
-with col_pie1:
-    st.markdown("##### Phishing vs Legitimate URLs")
-    p_legit = stats["legitimate_phishing"]
-    p_mal = stats["malicious_phishing"]
-    if p_legit == 0 and p_mal == 0:
-        st.info("No URL analyses recorded yet.")
+st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
+st.markdown("<div class='section-header'>Threat overview</div>", unsafe_allow_html=True)
+metric_cols = st.columns(6)
+metric_cols[0].metric(
+    "Total Analyses",
+    int(stats.get("total_analyses", 0)),
+    help="Total stored security evaluations in the local SQLite database.",
+)
+metric_cols[1].metric(
+    "URLs Analyzed",
+    int(stats.get("total_phishing", 0)),
+    help="Total phishing checks recorded in the database.",
+)
+metric_cols[2].metric(
+    "Phishing URLs Detected",
+    int(stats.get("malicious_phishing", 0)),
+    help="Count of phishing detections flagged by the model.",
+)
+metric_cols[3].metric(
+    "Network Flows Analyzed",
+    int(stats.get("total_network_flows", 0)),
+    help="Total network flow records processed across uploaded CSV batches.",
+)
+metric_cols[4].metric(
+    "Predicted Attacks",
+    int(stats.get("attack_network_flows", 0)),
+    help="Estimated attack flows from the trained network model.",
+)
+metric_cols[5].metric(
+    "High-Risk Incidents",
+    int(stats.get("high_risk_count", 0)),
+    help="High-risk records currently recorded in the audit log.",
+)
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
+st.markdown("<div class='section-header'>Quick actions</div>", unsafe_allow_html=True)
+action_cols = st.columns(5)
+with action_cols[0]:
+    if st.button("Analyze a URL"):
+        st.switch_page("pages/1_Phishing_Detection.py")
+with action_cols[1]:
+    if st.button("Inspect Network"):
+        st.switch_page("pages/2_Network_Intrusion.py")
+with action_cols[2]:
+    if st.button("Model Performance"):
+        st.switch_page("pages/4_Model_Evaluation.py")
+with action_cols[3]:
+    if st.button("Analysis History"):
+        st.switch_page("pages/5_Analysis_History.py")
+with action_cols[4]:
+    if st.button("Generate Report"):
+        st.switch_page("pages/6_Reports.py")
+st.markdown("</div>", unsafe_allow_html=True)
+
+chart_cols = st.columns(3)
+with chart_cols[0]:
+    st.markdown("<div class='section-header'>Phishing distribution</div>", unsafe_allow_html=True)
+    legit = int(stats.get("legitimate_phishing", 0))
+    phish = int(stats.get("malicious_phishing", 0))
+    if legit == 0 and phish == 0:
+        st.info("No phishing entries have been recorded yet.")
     else:
-        fig_phish = px.pie(
+        phish_fig = px.pie(
             names=["Legitimate", "Phishing"],
-            values=[p_legit, p_mal],
+            values=[legit, phish],
             color=["Legitimate", "Phishing"],
-            color_discrete_map={"Legitimate": "#10B981", "Phishing": "#EF4444"},
-            hole=0.5,
+            color_discrete_map={"Legitimate": "#34d399", "Phishing": "#f87171"},
+            hole=0.42,
         )
-        fig_phish.update_layout(
+        phish_fig.update_layout(
             template="plotly_dark",
-            paper_bgcolor="#1C2541",
-            font=dict(color="#FFFFFF"),
-            height=260,
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#0f172a",
+            font=dict(color="#e2e8f0"),
+            height=280,
             margin=dict(l=10, r=10, t=10, b=10),
         )
-        st.plotly_chart(fig_phish, use_container_width=True)
+        st.plotly_chart(phish_fig, width='stretch')
 
-with col_pie2:
-    st.markdown("##### Benign vs Attack Network Flows")
-    net_benign = stats["benign_network_flows"]
-    net_attack = stats["attack_network_flows"]
+with chart_cols[1]:
+    st.markdown("<div class='section-header'>Network flow status</div>", unsafe_allow_html=True)
+    net_benign = int(stats.get("benign_network_flows", 0))
+    net_attack = int(stats.get("attack_network_flows", 0))
     if net_benign == 0 and net_attack == 0:
-        st.info("No network flows uploaded yet.")
+        st.info("No network analysis records are available yet.")
     else:
-        fig_net = px.pie(
+        net_fig = px.pie(
             names=["Benign", "Attack"],
             values=[net_benign, net_attack],
             color=["Benign", "Attack"],
-            color_discrete_map={"Benign": "#38BDF8", "Attack": "#F43F5E"},
-            hole=0.5,
+            color_discrete_map={"Benign": "#60a5fa", "Attack": "#f87171"},
+            hole=0.42,
         )
-        fig_net.update_layout(
+        net_fig.update_layout(
             template="plotly_dark",
-            paper_bgcolor="#1C2541",
-            font=dict(color="#FFFFFF"),
-            height=260,
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#0f172a",
+            font=dict(color="#e2e8f0"),
+            height=280,
             margin=dict(l=10, r=10, t=10, b=10),
         )
-        st.plotly_chart(fig_net, use_container_width=True)
+        st.plotly_chart(net_fig, width='stretch')
 
-# Educational Analysis Dig Callout
-render_analysis_dig_box(
-    title="Analysis Dig: How to Read the Threat Posture Gauge",
-    explanation=(
-        "The Threat Posture Gauge synthesizes telemetry across both URL lexical scanning and network flow monitoring. "
-        "It expresses the proportion of inspected targets exhibiting confirmed malicious signatures."
-    ),
-    takeaways=[
-        "🟢 0% - 35%: Safe / Benign Baseline — Normal network operations and safe web link distribution.",
-        "🟡 35% - 70%: Elevated Risk — Targeted phishing campaigns or suspicious network reconnaissance detected.",
-        "🔴 70% - 100%: Critical Incident State — Severe active intrusions or weaponized credential harvesting links.",
-    ],
-)
+with chart_cols[2]:
+    st.markdown("<div class='section-header'>Risk severity</div>", unsafe_allow_html=True)
+    high_count = int(stats.get("high_risk_count", 0))
+    medium_count = int(stats.get("medium_risk_count", 0))
+    low_count = int(stats.get("low_risk_count", 0))
+    if high_count == 0 and medium_count == 0 and low_count == 0:
+        st.info("No severity records are available yet.")
+    else:
+        risk_fig = go.Figure(
+            go.Bar(
+                x=["High", "Medium", "Low"],
+                y=[high_count, medium_count, low_count],
+                marker=dict(color=["#f87171", "#fbbf24", "#34d399"]),
+                text=[high_count, medium_count, low_count],
+                textposition="auto",
+                hovertemplate="%{x}: %{y}<extra></extra>",
+            )
+        )
+        risk_fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="#0f172a",
+            plot_bgcolor="#0f172a",
+            font=dict(color="#e2e8f0"),
+            height=280,
+            margin=dict(l=10, r=10, t=10, b=10),
+            yaxis_title="Incident Count",
+        )
+        st.plotly_chart(risk_fig, width='stretch')
 
-st.divider()
+st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
+st.markdown("<div class='section-header'>Recent activity</div>", unsafe_allow_html=True)
+# Lightweight recent activity inspector with client-side filters
+recent_type = st.selectbox("Recent Type:", ["All", "Phishing", "Network"], index=0)
+recent_risk = st.selectbox("Severity:", ["All", "High", "Medium", "Low"], index=0)
+recent_start = st.date_input("From", value=None)
+recent_end = st.date_input("To", value=None)
 
-# Quick Navigation Actions
-st.subheader("⚡ Threat Response Actions")
-q1, q2, q3, q4 = st.columns(4)
-with q1:
-    if st.button("🎣 Inspect a URL", use_container_width=True):
-        st.switch_page("pages/1_Phishing_Detection.py")
-with q2:
-    if st.button("🌐 Analyze Network Flows", use_container_width=True):
-        st.switch_page("pages/2_Network_Intrusion.py")
-with q3:
-    if st.button("💡 Explore Explainable XAI", use_container_width=True):
-        st.switch_page("pages/3_Explainable_AI.py")
-with q4:
-    if st.button("📄 Generate Audit Report", use_container_width=True):
-        st.switch_page("pages/6_Reports.py")
+recent_history = get_analysis_history(limit=200)
 
-st.divider()
+def _filter_recent(records: list[dict]):
+    import pandas as _pd
+    if not records:
+        return []
+    df = _pd.DataFrame(records)
+    if recent_type != "All":
+        df = df[df["analysis_type"].str.lower() == recent_type.lower()]
+    if recent_risk != "All":
+        df = df[df["risk_level"].str.lower() == recent_risk.lower()]
+    try:
+        df["_ts"] = _pd.to_datetime(df["timestamp"], errors="coerce")
+        if recent_start:
+            df = df[df["_ts"] >= _pd.to_datetime(recent_start)]
+        if recent_end:
+            df = df[df["_ts"] <= _pd.to_datetime(recent_end) + _pd.Timedelta(days=1)]
+    except Exception:
+        pass
+    return df.sort_values(by="timestamp", ascending=False).to_dict(orient="records")
 
-# Recent Activity Audit Trail
-st.subheader("🕒 Recent Security Analysis Activity")
-recent_history = get_analysis_history(limit=8)
+recent_filtered = _filter_recent(recent_history)
+if recent_filtered:
+    table_rows = [{
+        "ID": r["id"],
+        "Timestamp": r["timestamp"],
+        "Type": r["analysis_type"].upper(),
+        "Summary": r["input_summary"],
+        "Prediction": r["predicted_class"],
+        "Risk": r["risk_level"],
+        "Model": r["model_name"],
+    } for r in recent_filtered[:12]]
+    st.dataframe(table_rows, width='stretch', hide_index=True)
 
-if recent_history:
-    display_rows = []
-    for r in recent_history:
-        display_rows.append({
-            "ID": r["id"],
-            "Timestamp": r["timestamp"],
-            "Type": r["analysis_type"].upper(),
-            "Target Summary": r["input_summary"],
-            "Prediction": r["predicted_class"],
-            "Risk Level": r["risk_level"],
-            "Model Name": r["model_name"],
-        })
-    st.dataframe(display_rows, use_container_width=True)
+    # Provide compact detail expanders for analyst review
+    for r in recent_filtered[:12]:
+        with st.expander(f"[{r.get('timestamp')}] {r.get('analysis_type','').upper()} — {r.get('input_summary')}"):
+            st.write({
+                "Prediction": r.get("predicted_class"),
+                "Risk": r.get("risk_level"),
+                "Model": r.get("model_name"),
+            })
+            if r.get("details"):
+                st.markdown("**Diagnostics**")
+                st.json(r.get("details"))
+            # navigation hint (no server launch)
+            st.caption("Use the Analysis History page to view full audit trails and download records.")
 else:
-    st.info("No analyses recorded in database yet. Analyze a URL or upload a network CSV to view live entries.")
+    st.info("No recorded analyses match the active filters. Use the Phishing or Network pages to generate analysis records.")
 
-st.divider()
-st.caption(
-    "🛡️ **CyberMorph AI** | Explainable Machine Learning Cybersecurity Platform | "
-    "Designed for Final-Year Engineering Demonstration & Academic Viva"
-)
+st.markdown("</div>", unsafe_allow_html=True)
