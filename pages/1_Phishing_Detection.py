@@ -78,16 +78,23 @@ with tab_url:
                     result_summary=result["summary"],
                     details={
                         "confidence": result["confidence"],
+                        "risk_score": result["risk_score"],
+                        "risk_severity": result["risk_severity"],
+                        "risk_evidence": result["risk_evidence"],
+                        "recommendation": result["recommendation"],
                         "diagnostics": result["diagnostics"],
                         "explanation_points": result["explanation_points"],
                     },
+                    risk_score=result["risk_score"],
+                    risk_evidence=result["risk_evidence"],
+                    recommendation=result["recommendation"],
                 )
 
                 st.divider()
 
                 # Result KPI Banner
                 is_phish = result["predicted_label"] == "phishing"
-                c1, c2, c3, c4 = st.columns(4)
+                c1, c2, c3, c4, c5 = st.columns(5)
 
                 c1.metric(
                     "Classification",
@@ -98,6 +105,8 @@ with tab_url:
                 c2.metric("Assessed Risk", result["risk_level"].upper())
                 c3.metric("Model Confidence", f"{result['confidence']:.2%}")
                 c4.metric("Extracted Lexical Signals", len(result["extracted_features"]))
+                c5.metric("Unified Risk Score", f"{result['risk_score']}/100 · {result['risk_severity']}")
+                st.caption("The unified score is a model-derived risk index, not a calibrated probability or a guarantee of safety.")
 
                 # Recommended Action Alert
                 if is_phish:
@@ -132,6 +141,7 @@ with tab_url:
                     st.markdown("##### Detailed Signal Diagnostics")
                     for pt in result["explanation_points"]:
                         st.markdown(f"- {pt}")
+                    st.markdown(f"**Defensive recommendation:** {result['recommendation']}")
 
                     if result["probability_map"]:
                         st.markdown("##### Class Probability Distribution")

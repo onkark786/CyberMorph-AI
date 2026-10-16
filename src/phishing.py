@@ -18,6 +18,7 @@ from ucimlrepo import fetch_ucirepo
 
 from src.config import PHISHING_DATA_DIR, PHISHING_MODEL_DIR
 from src.database import save_model_run
+from src.risk_scoring import assess_phishing_risk
 from src.url_features import (
     UCI_FEATURE_NAMES,
     extract_uci_compatible_features,
@@ -217,6 +218,11 @@ def predict_url(raw_url: str) -> dict[str, Any]:
             prob_map[label_name] = float(prob)
         probability = prob_map.get(predicted_label, float(np.max(probs)))
 
+    risk_assessment = assess_phishing_risk(
+        predicted_label,
+        prob_map.get("phishing"),
+    )
+
     # Determine risk level
     if predicted_label == "phishing":
         risk_level = "High" if probability >= 0.70 else "Medium"
@@ -245,6 +251,7 @@ def predict_url(raw_url: str) -> dict[str, Any]:
 
     if not explanation_points:
         explanation_points.append("The lexical structure conforms to typical legitimate internet naming patterns.")
+    risk_assessment["risk_evidence"].extend(explanation_points)
 
     summary_text = (
         f"The URL was classified as {predicted_label.upper()} with {probability:.1%} confidence. "
@@ -256,6 +263,7 @@ def predict_url(raw_url: str) -> dict[str, Any]:
         "predicted_label": predicted_label,
         "prediction_value": prediction_val,
         "risk_level": risk_level,
+        **risk_assessment,
         "confidence": probability,
         "probability_map": prob_map,
         "extracted_features": features,
@@ -288,12 +296,15 @@ def predict_engineered_features(feature_dict: dict[str, int]) -> dict[str, Any]:
             prob_map[lbl] = float(p)
         prob = prob_map.get(pred_label, float(np.max(probs)))
 
+    risk_assessment = assess_phishing_risk(pred_label, prob_map.get("phishing"))
+
     risk_level = "High" if pred_label == "phishing" else "Low"
 
     return {
         "predicted_label": pred_label,
         "prediction_value": pred_val,
         "risk_level": risk_level,
+        **risk_assessment,
         "confidence": prob,
         "probability_map": prob_map,
         "features": feature_dict,

@@ -7,7 +7,12 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.config import APP_TITLE
-from src.database import get_analysis_history, get_overview_stats
+from src.database import (
+    get_analysis_history,
+    get_overview_stats,
+    get_security_alert_counts,
+    get_security_alerts,
+)
 from src.network_ids import is_network_model_trained
 from src.phishing import is_model_trained as is_phishing_model_trained
 from src.ui_theme import (
@@ -101,7 +106,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
 st.markdown("<div class='section-header'>Quick actions</div>", unsafe_allow_html=True)
-action_cols = st.columns(5)
+action_cols = st.columns(6)
 with action_cols[0]:
     if st.button("Analyze a URL"):
         st.switch_page("pages/1_Phishing_Detection.py")
@@ -117,6 +122,40 @@ with action_cols[3]:
 with action_cols[4]:
     if st.button("Generate Report"):
         st.switch_page("pages/6_Reports.py")
+with action_cols[5]:
+    if st.button("Security Alerts"):
+        st.switch_page("pages/8_Security_Alerts.py")
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
+st.markdown("<div class='section-header'>Security alert center</div>", unsafe_allow_html=True)
+try:
+    alert_counts = get_security_alert_counts()
+    alert_cols = st.columns(6)
+    alert_cols[0].metric("Open Alerts", alert_counts.get("open", 0))
+    alert_cols[1].metric("Acknowledged", alert_counts.get("acknowledged", 0))
+    alert_cols[2].metric("Critical", alert_counts.get("critical", 0))
+    alert_cols[3].metric("High", alert_counts.get("high", 0))
+    alert_cols[4].metric("Average Risk Index", f"{stats.get('average_risk_score', 0.0):.1f}/100")
+    alert_cols[5].metric("Scored Analyses", stats.get("scored_analyses", 0))
+    active_alerts = get_security_alerts(limit=5, status="OPEN")
+    if active_alerts:
+        st.dataframe(
+            [{
+                "Created (UTC)": alert["created_at"],
+                "Type": alert["analysis_type"].title(),
+                "Target": alert["target"],
+                "Prediction": alert["predicted_class"],
+                "Risk Score": alert["risk_score"],
+                "Severity": alert["severity"],
+            } for alert in active_alerts],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.info("No open alerts. New medium-or-higher scored analyses appear here.")
+except Exception as exc:
+    st.error(f"Unable to load the Security Alert Center: {exc}")
 st.markdown("</div>", unsafe_allow_html=True)
 
 chart_cols = st.columns(3)

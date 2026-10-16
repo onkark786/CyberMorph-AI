@@ -23,6 +23,7 @@ from src.preprocessing import (
     sanitize_numeric_features,
     validate_input_schema,
 )
+from src.risk_scoring import DEFAULT_RISK_BANDS, assess_network_risk
 
 TARGET_LABEL_COL = "Label"
 NETWORK_CLASSES = {0: "BENIGN", 1: "ATTACK"}
@@ -259,6 +260,8 @@ def analyze_network_traffic_df(
     model, required_features = load_network_model()
 
     cleaned_df = clean_column_names(df)
+    if cleaned_df.empty:
+        raise ValueError("The uploaded network-flow dataset contains no records.")
     is_valid, missing_cols = validate_input_schema(cleaned_df, required_features)
     if not is_valid:
         raise ValueError(
@@ -275,23 +278,48 @@ def analyze_network_traffic_df(
     has_proba = hasattr(model, "predict_proba")
     probas = model.predict_proba(sanitized_features) if has_proba else None
 
+    attack_probabilities: Optional[list[float]] = None
+    if probas is not None:
+        model_classes = list(getattr(model, "classes_", []))
+        attack_indices = [
+            index for index, value in enumerate(model_classes)
+            if str(value).strip().upper() in {"1", "ATTACK"}
+        ]
+        if len(attack_indices) != 1:
+            raise ValueError("The network model probability output does not identify one ATTACK class.")
+        if probas.ndim != 2 or probas.shape[0] != len(raw_predictions):
+            raise ValueError("The network model returned an invalid probability array shape.")
+        attack_probabilities = [float(value) for value in probas[:, attack_indices[0]]]
+
     # Enrich output DataFrame
     enriched_df = df.copy()
     pred_labels = [NETWORK_CLASSES.get(int(p), "UNKNOWN") for p in raw_predictions]
     enriched_df["Predicted_Class"] = pred_labels
 
-    attack_probs = []
+    attack_probs = [round(value, 4) for value in attack_probabilities] if attack_probabilities is not None else [None] * len(raw_predictions)
+    row_scores = []
     risk_levels = []
-    for idx, p in enumerate(raw_predictions):
-        p_attack = float(probas[idx][1]) if probas is not None else (1.0 if p == 1 else 0.0)
-        attack_probs.append(round(p_attack, 4))
-        if p == 1:
-            risk_levels.append("High" if p_attack >= 0.75 else "Medium")
+    risk_severities = []
+    for idx, prediction in enumerate(raw_predictions):
+        predicted_attack = int(prediction) == 1
+        row_score = (
+            int(attack_probabilities[idx] * 100 + 0.5)
+            if attack_probabilities is not None
+            else (100 if predicted_attack else 0)
+        )
+        row_scores.append(row_score)
+        risk_severities.append(DEFAULT_RISK_BANDS.classify(row_score))
+        if attack_probabilities is None:
+            risk_levels.append("Unknown")
+        elif predicted_attack:
+            risk_levels.append("High" if attack_probabilities[idx] >= 0.75 else "Medium")
         else:
-            risk_levels.append("Low" if p_attack <= 0.25 else "Medium")
+            risk_levels.append("Low" if attack_probabilities[idx] <= 0.25 else "Medium")
 
     enriched_df["Attack_Probability"] = attack_probs
     enriched_df["Risk_Level"] = risk_levels
+    enriched_df["Risk_Score"] = row_scores
+    enriched_df["Risk_Severity"] = risk_severities
 
     # Summary analytics
     total = len(enriched_df)
@@ -299,6 +327,12 @@ def analyze_network_traffic_df(
     benign_count = int((raw_predictions == 0).sum())
     attack_pct = round((attack_count / total) * 100, 2) if total > 0 else 0.0
     overall_risk = "High" if attack_pct > 25.0 else ("Medium" if attack_pct > 5.0 else "Low")
+    risk_assessment = assess_network_risk(pred_labels, attack_probabilities)
+    mean_attack_probability = (
+        sum(attack_probabilities) / len(attack_probabilities)
+        if attack_probabilities is not None
+        else None
+    )
 
     summary = {
         "source_name": source_name,
@@ -306,10 +340,12 @@ def analyze_network_traffic_df(
         "attack_records": attack_count,
         "benign_records": benign_count,
         "attack_percentage": attack_pct,
+        "mean_attack_probability": mean_attack_probability,
         "overall_risk": overall_risk,
-        "high_risk_flows": int((enriched_df["Risk_Level"] == "High").sum()),
-        "medium_risk_flows": int((enriched_df["Risk_Level"] == "Medium").sum()),
-        "low_risk_flows": int((enriched_df["Risk_Level"] == "Low").sum()),
+        **risk_assessment,
+        "high_risk_flows": int((enriched_df["Risk_Severity"].isin(["High", "Critical"])).sum()),
+        "medium_risk_flows": int((enriched_df["Risk_Severity"] == "Medium").sum()),
+        "low_risk_flows": int((enriched_df["Risk_Severity"] == "Low").sum()),
     }
 
     if persist_history:
@@ -318,10 +354,13 @@ def analyze_network_traffic_df(
             input_summary=f"Batch: {source_name} ({total} records)",
             predicted_class="ATTACK" if attack_count > 0 else "BENIGN",
             risk_level=overall_risk,
-            probability=round(attack_pct / 100.0, 4),
+            probability=mean_attack_probability,
             model_name="Network IDS Classifier",
             result_summary=f"Analyzed {total} network flows: {attack_count} attacks ({attack_pct}%), {benign_count} benign.",
             details=summary,
+            risk_score=risk_assessment["risk_score"],
+            risk_evidence=risk_assessment["risk_evidence"],
+            recommendation=risk_assessment["recommendation"],
         )
 
     return enriched_df, summary

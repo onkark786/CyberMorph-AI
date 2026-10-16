@@ -9,6 +9,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import pytest
+import src.database as database
 from src.database import (
     clear_all_history,
     delete_analysis_record,
@@ -18,6 +19,12 @@ from src.database import (
     save_analysis,
     save_model_run,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_for_test(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep database tests away from the user's persistent project history."""
+    monkeypatch.setattr(database, "DB_PATH", tmp_path / "database_test.sqlite3")
 
 
 def test_database_initialization():

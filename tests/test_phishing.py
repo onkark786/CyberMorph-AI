@@ -34,6 +34,10 @@ def test_predict_url():
     assert result["risk_level"] in ("Low", "Medium", "High")
     assert "confidence" in result
     assert 0.0 <= result["confidence"] <= 1.0
+    assert 0 <= result["risk_score"] <= 100
+    assert result["risk_severity"] in ("Low", "Medium", "High", "Critical")
+    assert result["risk_evidence"]
+    assert result["recommendation"]
     assert "explanation_points" in result
     assert len(result["explanation_points"]) > 0
 

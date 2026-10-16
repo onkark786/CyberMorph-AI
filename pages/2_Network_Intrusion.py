@@ -95,7 +95,7 @@ if uploaded_file is not None:
             # Metric Cards
             st.divider()
             st.subheader("📊 Traffic Analytics Summary")
-            c1, c2, c3, c4 = st.columns(4)
+            c1, c2, c3, c4, c5 = st.columns(5)
             c1.metric("Total Records", summary["total_records"])
             c2.metric("Benign Flows", summary["benign_records"])
             c3.metric(
@@ -104,7 +104,9 @@ if uploaded_file is not None:
                 delta=f"{summary['attack_percentage']:.1f}% attack rate",
                 delta_color="inverse" if summary["attack_records"] > 0 else "normal",
             )
-            c4.metric("Assessed Threat Level", summary["overall_risk"])
+            c4.metric("Batch Risk Score", f"{summary['risk_score']}/100")
+            c5.metric("Score Severity", summary["risk_severity"])
+            st.caption("The unified risk score is a decision-support index derived from model outputs, not a calibrated probability.")
 
             # Threat Alert
             if summary["attack_records"] > 0:
@@ -161,21 +163,44 @@ if uploaded_file is not None:
             st.divider()
             st.subheader("🔍 Classified Network Flows (Enriched Preview)")
 
+            severity_options = ["Low", "Medium", "High", "Critical"]
+            selected_severities = st.multiselect(
+                "Filter by risk severity",
+                severity_options,
+                default=severity_options,
+                key="network_risk_filter",
+            )
+            prediction_options = sorted(enriched_df["Predicted_Class"].dropna().unique().tolist())
+            selected_predictions = st.multiselect(
+                "Filter by prediction",
+                prediction_options,
+                default=prediction_options,
+                key="network_prediction_filter",
+            )
+            filtered_df = enriched_df[
+                enriched_df["Risk_Severity"].isin(selected_severities)
+                & enriched_df["Predicted_Class"].isin(selected_predictions)
+            ]
+
             # Select key summary columns for clean viewing
             key_cols = [
                 col for col in [
                     "Destination Port", "Flow Duration", "Total Fwd Packets",
                     "Total Backward Packets", "Flow Bytes/s", "Flow Packets/s",
-                    "Predicted_Class", "Attack_Probability", "Risk_Level"
+                    "Predicted_Class", "Attack_Probability", "Risk_Score",
+                    "Risk_Severity", "Risk_Level"
                 ] if col in enriched_df.columns
             ]
 
-            st.dataframe(enriched_df[key_cols].head(50), width='stretch')
+            if filtered_df.empty:
+                st.info("No flows match the selected prediction and severity filters.")
+            else:
+                st.dataframe(filtered_df[key_cols].head(50), width='stretch')
 
             # CSV Download Button
-            csv_bytes = generate_csv_bytes(enriched_df)
+            csv_bytes = generate_csv_bytes(filtered_df)
             st.download_button(
-                label="📥 Download Full Enriched Prediction CSV",
+                label="📥 Download Filtered Enriched Prediction CSV",
                 data=csv_bytes,
                 file_name=f"cybermorph_nids_results_{uploaded_file.name}",
                 mime="text/csv",

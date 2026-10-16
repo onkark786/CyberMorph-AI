@@ -41,6 +41,14 @@ def test_analyze_sample_network_flows():
     assert "Predicted_Class" in enriched_df.columns
     assert "Attack_Probability" in enriched_df.columns
     assert "Risk_Level" in enriched_df.columns
+    assert "Risk_Score" in enriched_df.columns
+    assert "Risk_Severity" in enriched_df.columns
+    assert 0 <= summary["risk_score"] <= 100
+    assert summary["risk_severity"] in ("Low", "Medium", "High", "Critical")
+    assert summary["risk_evidence"]
+    assert summary["mean_attack_probability"] == pytest.approx(
+        enriched_df["Attack_Probability"].mean(), abs=0.0001
+    )
 
     assert summary["total_records"] == len(sample_df)
     assert summary["attack_records"] + summary["benign_records"] == len(sample_df)
