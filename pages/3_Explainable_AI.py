@@ -33,14 +33,10 @@ render_page_header(
     icon="💡",
 )
 
-st.markdown(
-    """
-    > [!NOTE]
-    > **Why Explainability Matters in Cybersecurity:**
-    > Machine learning models operating as opaque 'black boxes' can misclassify zero-day variations or exhibit biased shortcuts.
-    > CyberMorph AI applies dual-level interpretability: **Global Interpretability** (which signals the model relies on overall)
-    > and **Local Interpretability** (why a specific URL or packet was flagged).
-    """
+st.info(
+    "**Why explainability matters:** Models can misclassify unfamiliar patterns or rely on shortcuts. "
+    "CyberMorph AI provides global feature importance (model-wide rankings) and local URL explanations "
+    "(signals associated with one prediction); neither proves intent or causation."
 )
 
 tab_global, tab_local, tab_academic = st.tabs([
@@ -74,7 +70,7 @@ with tab_global:
             st.plotly_chart(fig, width='stretch')
 
             with st.expander("📋 Tabular Feature Importance Weights"):
-                st.dataframe(imp_df, use_container_width=True)
+                st.dataframe(imp_df, width="stretch")
     else:
         if not is_network_model_trained():
             st.warning("Network IDS model is not trained yet.")
@@ -90,7 +86,7 @@ with tab_global:
             st.plotly_chart(fig, width='stretch')
 
             with st.expander("📋 Tabular Feature Importance Weights"):
-                st.dataframe(imp_df, use_container_width=True)
+                st.dataframe(imp_df, width="stretch")
 
 with tab_local:
     st.subheader("Local Instance Explanation (Targeted URL Drilldown)")
@@ -118,10 +114,13 @@ with tab_local:
                 exp_df,
                 title=f"Instance Explanation for {res['url']}",
             )
-            st.plotly_chart(fig_local, use_container_width=True)
+            st.plotly_chart(fig_local, width="stretch")
 
             st.markdown("##### Feature Explanations")
-            st.dataframe(exp_df[["Signal Name", "Observed Value", "Status", "Impact on Prediction", "Context"]], use_container_width=True)
+            st.dataframe(
+                exp_df[["Signal Name", "Observed Value", "Status", "Impact on Prediction", "Context"]],
+                width="stretch",
+            )
 
 with tab_academic:
     st.subheader("Academic Principles & Interpretability Limitations")

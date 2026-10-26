@@ -47,15 +47,18 @@ with col_pdf:
     )
 
     if st.button("🔨 Compile PDF Security Report"):
-        with st.spinner("Compiling ReportLab PDF document..."):
-            pdf_bytes = generate_security_pdf_report(
-                overview_stats=stats,
-                phishing_meta=phish_meta,
-                network_meta=net_meta,
-                recent_records=recent_records,
-            )
-        st.session_state["cached_pdf"] = pdf_bytes
-        st.success("✅ PDF Report successfully compiled!")
+        try:
+            with st.spinner("Compiling ReportLab PDF document..."):
+                pdf_bytes = generate_security_pdf_report(
+                    overview_stats=stats,
+                    phishing_meta=phish_meta,
+                    network_meta=net_meta,
+                    recent_records=recent_records,
+                )
+            st.session_state["cached_pdf"] = pdf_bytes
+            st.success("PDF report compiled successfully.")
+        except Exception as exc:
+            st.error(f"Unable to compile the PDF report: {exc}")
 
     if "cached_pdf" in st.session_state:
         st.download_button(
@@ -86,6 +89,8 @@ with col_csv:
             file_name="cybermorph_full_history.csv",
             mime="text/csv",
         )
+    else:
+        st.info("No analysis history is available to export yet. A CSV export will appear after the first recorded analysis.")
 
     # Export Model Evaluation Metrics
     eval_records = []
@@ -133,6 +138,6 @@ with st.expander("📋 Preview Recent Audit Trail Included in Report"):
     if recent_records:
         st.dataframe(pd.DataFrame(recent_records)[[
             "id", "timestamp", "analysis_type", "input_summary", "predicted_class", "risk_level"
-        ]], width='stretch')
+        ]], width="stretch", hide_index=True)
     else:
         st.write("No recorded events currently in database.")

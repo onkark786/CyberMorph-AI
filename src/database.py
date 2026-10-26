@@ -157,6 +157,7 @@ def get_analysis_history(
     analysis_type: Optional[str] = None,
     search_query: Optional[str] = None,
     risk_filter: Optional[str] = None,
+    analysis_id: Optional[int] = None,
 ) -> list[dict[str, Any]]:
     """Retrieve filtered analysis history records."""
     init_db()
@@ -175,6 +176,10 @@ def get_analysis_history(
         query += " AND (input_summary LIKE ? OR result_summary LIKE ?)"
         term = f"%{search_query.strip()}%"
         params.extend([term, term])
+
+    if analysis_id is not None:
+        query += " AND id = ?"
+        params.append(analysis_id)
 
     query += " ORDER BY id DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])

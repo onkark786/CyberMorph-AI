@@ -69,94 +69,85 @@ with status_col2:
         "Not trained",
     )
 
-st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
-st.markdown("<div class='section-header'>Threat overview</div>", unsafe_allow_html=True)
-metric_cols = st.columns(6)
-metric_cols[0].metric(
-    "Total Analyses",
-    int(stats.get("total_analyses", 0)),
-    help="Total stored security evaluations in the local SQLite database.",
-)
-metric_cols[1].metric(
-    "URLs Analyzed",
-    int(stats.get("total_phishing", 0)),
-    help="Total phishing checks recorded in the database.",
-)
-metric_cols[2].metric(
-    "Phishing URLs Detected",
-    int(stats.get("malicious_phishing", 0)),
-    help="Count of phishing detections flagged by the model.",
-)
-metric_cols[3].metric(
-    "Network Flows Analyzed",
-    int(stats.get("total_network_flows", 0)),
-    help="Total network flow records processed across uploaded CSV batches.",
-)
-metric_cols[4].metric(
-    "Predicted Attacks",
-    int(stats.get("attack_network_flows", 0)),
-    help="Estimated attack flows from the trained network model.",
-)
-metric_cols[5].metric(
-    "High-Risk Incidents",
-    int(stats.get("high_risk_count", 0)),
-    help="High-risk records currently recorded in the audit log.",
-)
-st.markdown("</div>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.subheader("Threat overview", icon=":material/query_stats:")
+    metric_rows = (
+        (
+            ("Total analyses", int(stats.get("total_analyses", 0)), "Stored security evaluations in the local SQLite database."),
+            ("URLs analyzed", int(stats.get("total_phishing", 0)), "Phishing checks recorded in the database."),
+            ("Phishing predictions", int(stats.get("malicious_phishing", 0)), "URLs classified as phishing by the model."),
+        ),
+        (
+            ("Network flows analyzed", int(stats.get("total_network_flows", 0)), "Flow records processed across uploaded CSV batches."),
+            ("Predicted attacks", int(stats.get("attack_network_flows", 0)), "Network flows classified as attacks by the model."),
+            ("High-risk incidents", int(stats.get("high_risk_count", 0)), "High-risk records currently stored in the audit log."),
+        ),
+    )
+    for row in metric_rows:
+        metric_cols = st.columns(3)
+        for col, (label, value, help_text) in zip(metric_cols, row):
+            col.metric(label, value, help=help_text)
 
-st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
-st.markdown("<div class='section-header'>Quick actions</div>", unsafe_allow_html=True)
-action_cols = st.columns(6)
-with action_cols[0]:
-    if st.button("Analyze a URL"):
-        st.switch_page("pages/1_Phishing_Detection.py")
-with action_cols[1]:
-    if st.button("Inspect Network"):
-        st.switch_page("pages/2_Network_Intrusion.py")
-with action_cols[2]:
-    if st.button("Model Performance"):
-        st.switch_page("pages/4_Model_Evaluation.py")
-with action_cols[3]:
-    if st.button("Analysis History"):
-        st.switch_page("pages/5_Analysis_History.py")
-with action_cols[4]:
-    if st.button("Generate Report"):
-        st.switch_page("pages/6_Reports.py")
-with action_cols[5]:
-    if st.button("Security Alerts"):
-        st.switch_page("pages/8_Security_Alerts.py")
-st.markdown("</div>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.subheader("Quick actions", icon=":material/bolt:")
+    action_rows = (
+        (
+            ("Analyze a URL", "pages/1_Phishing_Detection.py"),
+            ("Inspect network traffic", "pages/2_Network_Intrusion.py"),
+            ("Model performance", "pages/4_Model_Evaluation.py"),
+        ),
+        (
+            ("Analysis history", "pages/5_Analysis_History.py"),
+            ("Generate a report", "pages/6_Reports.py"),
+            ("Security alerts", "pages/8_Security_Alerts.py"),
+        ),
+    )
+    for row in action_rows:
+        action_cols = st.columns(3)
+        for col, (label, page_path) in zip(action_cols, row):
+            with col:
+                if st.button(label):
+                    st.switch_page(page_path)
 
-st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
-st.markdown("<div class='section-header'>Security alert center</div>", unsafe_allow_html=True)
-try:
-    alert_counts = get_security_alert_counts()
-    alert_cols = st.columns(6)
-    alert_cols[0].metric("Open Alerts", alert_counts.get("open", 0))
-    alert_cols[1].metric("Acknowledged", alert_counts.get("acknowledged", 0))
-    alert_cols[2].metric("Critical", alert_counts.get("critical", 0))
-    alert_cols[3].metric("High", alert_counts.get("high", 0))
-    alert_cols[4].metric("Average Risk Index", f"{stats.get('average_risk_score', 0.0):.1f}/100")
-    alert_cols[5].metric("Scored Analyses", stats.get("scored_analyses", 0))
-    active_alerts = get_security_alerts(limit=5, status="OPEN")
-    if active_alerts:
-        st.dataframe(
-            [{
-                "Created (UTC)": alert["created_at"],
-                "Type": alert["analysis_type"].title(),
-                "Target": alert["target"],
-                "Prediction": alert["predicted_class"],
-                "Risk Score": alert["risk_score"],
-                "Severity": alert["severity"],
-            } for alert in active_alerts],
-            width="stretch",
-            hide_index=True,
+with st.container(border=True):
+    st.subheader("Security alert center", icon=":material/notification_important:")
+    try:
+        alert_counts = get_security_alert_counts()
+        alert_metric_rows = (
+            (
+                ("Open alerts", alert_counts.get("open", 0)),
+                ("Acknowledged", alert_counts.get("acknowledged", 0)),
+                ("Critical", alert_counts.get("critical", 0)),
+            ),
+            (
+                ("High", alert_counts.get("high", 0)),
+                ("Average risk index", f"{stats.get('average_risk_score', 0.0):.1f}/100"),
+                ("Scored analyses", stats.get("scored_analyses", 0)),
+            ),
         )
-    else:
-        st.info("No open alerts. New medium-or-higher scored analyses appear here.")
-except Exception as exc:
-    st.error(f"Unable to load the Security Alert Center: {exc}")
-st.markdown("</div>", unsafe_allow_html=True)
+        for row in alert_metric_rows:
+            alert_cols = st.columns(3)
+            for col, (label, value) in zip(alert_cols, row):
+                col.metric(label, value)
+
+        active_alerts = get_security_alerts(limit=5, status="OPEN")
+        if active_alerts:
+            st.dataframe(
+                [{
+                    "Created (UTC)": alert["created_at"],
+                    "Type": alert["analysis_type"].title(),
+                    "Target": alert["target"],
+                    "Model prediction": alert["predicted_class"],
+                    "Risk score": alert["risk_score"],
+                    "Severity": alert["severity"],
+                } for alert in active_alerts],
+                width="stretch",
+                hide_index=True,
+            )
+        else:
+            st.info("No open alerts. New medium-or-higher scored analyses appear here.")
+    except Exception as exc:
+        st.error(f"Unable to load the Security Alert Center: {exc}")
 
 chart_cols = st.columns(3)
 with chart_cols[0]:
@@ -236,62 +227,57 @@ with chart_cols[2]:
         )
         st.plotly_chart(risk_fig, width='stretch')
 
-st.markdown("<div class='section-shell'>", unsafe_allow_html=True)
-st.markdown("<div class='section-header'>Recent activity</div>", unsafe_allow_html=True)
+with st.container(border=True):
+    st.subheader("Recent activity", icon=":material/history:")
 # Lightweight recent activity inspector with client-side filters
-recent_type = st.selectbox("Recent Type:", ["All", "Phishing", "Network"], index=0)
-recent_risk = st.selectbox("Severity:", ["All", "High", "Medium", "Low"], index=0)
-recent_start = st.date_input("From", value=None)
-recent_end = st.date_input("To", value=None)
+    recent_type = st.selectbox("Recent type", ["All", "Phishing", "Network"], index=0)
+    recent_risk = st.selectbox("Severity", ["All", "Critical", "High", "Medium", "Low"], index=0)
+    recent_start = st.date_input("From", value=None)
+    recent_end = st.date_input("To", value=None)
 
-recent_history = get_analysis_history(limit=200)
+    recent_history = get_analysis_history(limit=200)
 
-def _filter_recent(records: list[dict]):
-    import pandas as _pd
-    if not records:
-        return []
-    df = _pd.DataFrame(records)
-    if recent_type != "All":
-        df = df[df["analysis_type"].str.lower() == recent_type.lower()]
-    if recent_risk != "All":
-        df = df[df["risk_level"].str.lower() == recent_risk.lower()]
-    try:
-        df["_ts"] = _pd.to_datetime(df["timestamp"], errors="coerce")
-        if recent_start:
-            df = df[df["_ts"] >= _pd.to_datetime(recent_start)]
-        if recent_end:
-            df = df[df["_ts"] <= _pd.to_datetime(recent_end) + _pd.Timedelta(days=1)]
-    except Exception:
-        pass
-    return df.sort_values(by="timestamp", ascending=False).to_dict(orient="records")
+    def _filter_recent(records: list[dict]):
+        import pandas as _pd
+        if not records:
+            return []
+        df = _pd.DataFrame(records)
+        if recent_type != "All":
+            df = df[df["analysis_type"].str.lower() == recent_type.lower()]
+        if recent_risk != "All":
+            df = df[df["risk_level"].str.lower() == recent_risk.lower()]
+        if recent_start or recent_end:
+            df["_ts"] = _pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
+            if recent_start:
+                df = df[df["_ts"] >= _pd.Timestamp(recent_start, tz="UTC")]
+            if recent_end:
+                end_exclusive = _pd.Timestamp(recent_end, tz="UTC") + _pd.Timedelta(days=1)
+                df = df[df["_ts"] < end_exclusive]
+        return df.sort_values(by="timestamp", ascending=False).to_dict(orient="records")
 
-recent_filtered = _filter_recent(recent_history)
-if recent_filtered:
-    table_rows = [{
-        "ID": r["id"],
-        "Timestamp": r["timestamp"],
-        "Type": r["analysis_type"].upper(),
-        "Summary": r["input_summary"],
-        "Prediction": r["predicted_class"],
-        "Risk": r["risk_level"],
-        "Model": r["model_name"],
-    } for r in recent_filtered[:12]]
-    st.dataframe(table_rows, width='stretch', hide_index=True)
+    recent_filtered = _filter_recent(recent_history)
+    if recent_filtered:
+        table_rows = [{
+            "ID": r["id"],
+            "Timestamp (UTC)": r["timestamp"],
+            "Type": r["analysis_type"].title(),
+            "Target": r["input_summary"],
+            "Model prediction": r["predicted_class"],
+            "Risk": r["risk_level"],
+            "Model": r["model_name"],
+        } for r in recent_filtered[:12]]
+        st.dataframe(table_rows, width="stretch", hide_index=True)
 
-    # Provide compact detail expanders for analyst review
-    for r in recent_filtered[:12]:
-        with st.expander(f"[{r.get('timestamp')}] {r.get('analysis_type','').upper()} — {r.get('input_summary')}"):
-            st.write({
-                "Prediction": r.get("predicted_class"),
-                "Risk": r.get("risk_level"),
-                "Model": r.get("model_name"),
-            })
-            if r.get("details"):
-                st.markdown("**Diagnostics**")
-                st.json(r.get("details"))
-            # navigation hint (no server launch)
-            st.caption("Use the Analysis History page to view full audit trails and download records.")
-else:
-    st.info("No recorded analyses match the active filters. Use the Phishing or Network pages to generate analysis records.")
-
-st.markdown("</div>", unsafe_allow_html=True)
+        for r in recent_filtered[:12]:
+            with st.expander(f"[{r.get('timestamp')}] {r.get('analysis_type','').title()} — {r.get('input_summary')}"):
+                st.write({
+                    "Model prediction": r.get("predicted_class"),
+                    "Risk assessment": r.get("risk_level"),
+                    "Model": r.get("model_name"),
+                })
+                if r.get("details"):
+                    st.markdown("**Stored diagnostics**")
+                    st.json(r.get("details"))
+                st.caption("Model-generated results are decision-support signals; corroborate them with independent telemetry.")
+    else:
+        st.info("No recorded analyses match the active filters. Use the Phishing or Network pages to generate analysis records.")

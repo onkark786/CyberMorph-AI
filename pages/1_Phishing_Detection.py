@@ -111,14 +111,14 @@ with tab_url:
                 # Recommended Action Alert
                 if is_phish:
                     st.error(
-                        "🛑 **Threat Alert: High Risk Phishing Indicators Identified!**\n\n"
+                        "🛑 **Model classified this URL as phishing.** This is a risk signal, not independent confirmation of malicious behavior.\n\n"
                         "- **Recommendation:** Do NOT visit this link or enter personal credentials.\n"
                         "- **Defensive Action:** Block domain at firewall/DNS gateway and report to security operations."
                     )
                 else:
                     st.success(
-                        "✅ **Low Risk: Conforms to Standard Legitimate Naming Conventions.**\n\n"
-                        "- **Notice:** While lexical structure appears normal, always verify SSL certificate authenticity before submitting confidential data."
+                        "✅ **Model classified this URL as legitimate.** A lexical classification does not guarantee that a site is safe.\n\n"
+                        "- **Notice:** Verify the destination independently before submitting confidential data."
                     )
 
                 # Local Explanation Breakdown

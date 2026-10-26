@@ -74,6 +74,32 @@ def test_filter_and_search_history():
     assert len(searched) > 0
 
 
+def test_filter_history_by_analysis_id():
+    """Allow an alert to open its exact linked history record."""
+    rec_id = save_analysis(
+        analysis_type="phishing",
+        input_summary="https://linked-example.test",
+        predicted_class="PHISHING",
+        risk_level="Critical",
+        probability=0.98,
+        model_name="Test Model",
+        result_summary="Model classified the URL as phishing.",
+    )
+    save_analysis(
+        analysis_type="network",
+        input_summary="Batch: unrelated.csv",
+        predicted_class="BENIGN",
+        risk_level="Low",
+        probability=0.05,
+        model_name="Test IDS",
+        result_summary="No attacks predicted.",
+    )
+
+    linked_records = get_analysis_history(analysis_id=rec_id)
+    assert len(linked_records) == 1
+    assert linked_records[0]["id"] == rec_id
+
+
 def test_delete_analysis_record():
     """Verify deleting a specific record."""
     rec_id = save_analysis(

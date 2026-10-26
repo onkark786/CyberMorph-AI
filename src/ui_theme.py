@@ -5,19 +5,18 @@ from src.config import APP_SUBTITLE, APP_TITLE
 
 
 def apply_custom_theme():
-    """Inject premium dark cybersecurity styling across the app."""
+    """Apply shared refinements to the configured Streamlit theme."""
     custom_css = """
     <style>
     :root {
         --bg: #071120;
         --bg-2: #0d1b2a;
-        --panel: rgba(15, 23, 42, 0.92);
-        --panel-strong: rgba(17, 24, 39, 0.96);
-        --panel-soft: rgba(30, 41, 59, 0.9);
-        --border: rgba(148, 163, 184, 0.18);
-        --primary: #4cc9f0;
-        --primary-strong: #00f2fe;
-        --accent: #5eead4;
+        --panel: rgba(15, 23, 42, 0.82);
+        --panel-strong: rgba(17, 24, 39, 0.94);
+        --panel-soft: rgba(30, 41, 59, 0.72);
+        --border: rgba(148, 163, 184, 0.2);
+        --primary: #38bdf8;
+        --accent: #67e8f9;
         --success: #34d399;
         --warning: #fbbf24;
         --danger: #f87171;
@@ -28,10 +27,16 @@ def apply_custom_theme():
     }
 
     .stApp {
-        background: radial-gradient(circle at top left, rgba(76, 201, 240, 0.10), transparent 28%),
-                    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+        background:
+            radial-gradient(ellipse at 12% 0%, rgba(56, 189, 248, 0.08), transparent 34%),
+            linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
         color: var(--text);
-        font-family: 'Segoe UI', Inter, sans-serif;
+    }
+
+    .block-container {
+        padding-top: 1.8rem;
+        padding-bottom: 2.5rem;
+        max-width: 1560px;
     }
 
     section[data-testid="stSidebar"] {
@@ -52,29 +57,27 @@ def apply_custom_theme():
     }
 
     .stSidebar .stPageLink:hover {
-        background: rgba(76, 201, 240, 0.08);
-        border-color: rgba(76, 201, 240, 0.18);
+        background: rgba(56, 189, 248, 0.08);
+        border-color: rgba(56, 189, 248, 0.2);
     }
 
     .stSidebar .stPageLink[data-selected="true"] {
-        background: linear-gradient(90deg, rgba(76, 201, 240, 0.14), rgba(94, 234, 212, 0.08));
-        border-color: rgba(76, 201, 240, 0.38);
+        background: linear-gradient(90deg, rgba(56, 189, 248, 0.14), rgba(103, 232, 249, 0.07));
+        border-color: rgba(56, 189, 248, 0.38);
         color: #ffffff;
         font-weight: 600;
     }
 
     div[data-testid="stMetric"] {
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(17, 24, 39, 0.96));
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.94));
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1rem 1.1rem;
-        box-shadow: 0 10px 25px var(--shadow);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 8px 20px var(--shadow);
     }
 
-    div[data-testid="stMetric"]:hover {
-        border-color: rgba(76, 201, 240, 0.42);
-        transform: translateY(-1px);
-        transition: all 0.2s ease;
+    div[data-testid="stMetricLabel"] {
+        color: #b6c5d6;
     }
 
     .cyber-hero {
@@ -118,11 +121,11 @@ def apply_custom_theme():
     .pill-danger { border-color: rgba(248, 113, 113, 0.55); background: rgba(248, 113, 113, 0.10); color: #fee2e2; }
 
     .section-shell {
-        background: rgba(15, 23, 42, 0.75);
+        background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 16px;
+        border-radius: 12px;
         padding: 1rem 1.1rem;
-        box-shadow: 0 12px 22px rgba(2, 6, 23, 0.2);
+        box-shadow: 0 8px 20px rgba(2, 6, 23, 0.18);
         margin-bottom: 1rem;
     }
 
@@ -135,42 +138,85 @@ def apply_custom_theme():
     }
 
     .stButton > button {
-        background: linear-gradient(90deg, rgba(79, 172, 254, 1), rgba(0, 242, 254, 1));
+        background: linear-gradient(100deg, #38bdf8, #67e8f9);
         color: #03111d !important;
         border: none;
-        border-radius: 12px;
+        border-radius: 9px;
         font-weight: 700;
-        padding: 0.7rem 1.1rem;
-        box-shadow: 0 10px 24px rgba(79, 172, 254, 0.22);
+        padding: 0.62rem 1rem;
+        box-shadow: 0 6px 16px rgba(56, 189, 248, 0.16);
     }
 
     .stButton > button:hover {
         filter: brightness(1.05);
     }
 
+    .stButton > button:focus-visible,
+    .stDownloadButton > button:focus-visible,
+    a:focus-visible {
+        outline: 3px solid #a5f3fc;
+        outline-offset: 2px;
+    }
+
     .stDownloadButton > button {
-        background: linear-gradient(90deg, rgba(13, 148, 136, 0.9), rgba(45, 212, 191, 0.9));
-        color: #ecfeff !important;
+        border-color: rgba(103, 232, 249, 0.45);
     }
 
     div[data-testid="stDataFrame"] {
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
         border: 1px solid var(--border);
     }
 
+    div[data-testid="stFileUploader"],
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stSelectbox"] > div > div,
+    div[data-testid="stMultiSelect"] > div > div {
+        border-color: var(--border);
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        font-weight: 600;
+    }
+
     hr {
         border-color: rgba(148, 163, 184, 0.22) !important;
-        margin: 1.4rem 0 !important;
+        margin: 1.1rem 0 !important;
     }
 
     .cyber-alert {
         background: rgba(15, 23, 42, 0.9);
         border: 1px solid rgba(148, 163, 184, 0.18);
-        border-left: 4px solid var(--primary);
-        border-radius: 14px;
+        border-left: 3px solid var(--primary);
+        border-radius: 10px;
         padding: 0.85rem 1rem;
         color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .cyber-hero {
+            padding: 1rem;
+        }
+
+        .cyber-hero-title {
+            font-size: 1.65rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+        }
     }
     </style>
     """
@@ -180,34 +226,17 @@ def apply_custom_theme():
 def render_brand_sidebar():
     """Render a compact cybersecurity brand block in the sidebar."""
     with st.sidebar:
-        st.markdown(
-            f"""
-            <div style="text-align: center; padding: 0.6rem 0 0.8rem 0;">
-                <div style="font-size: 2.2rem; margin-bottom: 0.2rem;">🛡️</div>
-                <div style="font-size: 1.2rem; font-weight: 800; color: #7dd3fc; letter-spacing: 0.04em;">{APP_TITLE}</div>
-                <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 0.2rem;">{APP_SUBTITLE}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.caption("SOC / AI Defense Workspace")
+        st.markdown(f"### :material/security: {APP_TITLE}")
+        st.caption(APP_SUBTITLE)
+        st.caption("SOC / AI defense workspace")
         st.divider()
 
 
 def render_page_header(title: str, subtitle: str, icon: str = "🛡️"):
     """Render a premium hero header block for all pages."""
-    st.markdown(
-        f"""
-        <div class="cyber-hero">
-            <div style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap; margin-bottom: 0.4rem;">
-                <div style="font-size:1.8rem;">{icon}</div>
-                <div class="cyber-hero-title">{title}</div>
-            </div>
-            <div class="cyber-hero-subtitle">{subtitle}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(border=True):
+        st.title(title, icon=icon)
+        st.caption(subtitle)
 
 
 def render_status_pill(label: str, is_ready: bool, ready_text: str, not_ready_text: str) -> None:

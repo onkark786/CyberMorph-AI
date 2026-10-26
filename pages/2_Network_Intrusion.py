@@ -111,11 +111,13 @@ if uploaded_file is not None:
             # Threat Alert
             if summary["attack_records"] > 0:
                 st.warning(
-                    f"⚠️ **Intrusion Patterns Identified:** {summary['attack_records']} out of {summary['total_records']} "
-                    f"flows exhibited attack characteristics. Examine anomalous flows below."
+                    f"⚠️ **Model predictions:** {summary['attack_records']} of {summary['total_records']} "
+                    "flows were classified as attacks. Correlate flagged flows with independent telemetry."
                 )
             else:
-                st.success("🟢 **Clean Traffic Signature:** No abnormal intrusion patterns detected across evaluated flows.")
+                st.success(
+                    "No flows were classified as attacks in this batch. This model result does not establish that the network is threat-free."
+                )
 
             # Visualizations
             col_chart1, col_chart2 = st.columns(2)

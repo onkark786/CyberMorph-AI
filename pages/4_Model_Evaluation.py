@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import streamlit as st
 
 from src.config import APP_TITLE
@@ -11,6 +13,18 @@ from src.metrics import (
 from src.network_ids import get_network_metadata, is_network_model_trained
 from src.phishing import get_phishing_metadata, is_model_trained as is_phishing_model_trained
 from src.ui_theme import apply_custom_theme, render_brand_sidebar, render_page_header
+
+
+def _format_metric(metrics: dict, key: str) -> str:
+    value = metrics.get(key)
+    if value is None:
+        return "N/A"
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return "N/A"
+    return f"{numeric_value:.2%}" if math.isfinite(numeric_value) else "N/A"
+
 
 st.set_page_config(
     page_title=f"{APP_TITLE} | Model Evaluation",
@@ -42,10 +56,10 @@ with tab_phish:
         p_metrics = p_meta.get("metrics", {})
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Champion Architecture", p_meta.get("selected_model", "Random Forest"))
-        c2.metric("Held-out Test Accuracy", f"{p_metrics.get('accuracy', 0.0):.2%}")
-        c3.metric("Phishing Class Recall", f"{p_metrics.get('recall', 0.0):.2%}")
-        c4.metric("Phishing Class F1-Score", f"{p_metrics.get('f1_score', 0.0):.2%}")
+        c1.metric("Champion architecture", p_meta.get("selected_model") or "N/A")
+        c2.metric("Held-out test accuracy", _format_metric(p_metrics, "accuracy"))
+        c3.metric("Phishing class recall", _format_metric(p_metrics, "recall"))
+        c4.metric("Phishing class F1 score", _format_metric(p_metrics, "f1_score"))
 
         st.divider()
 
@@ -60,6 +74,8 @@ with tab_phish:
                     title="Phishing Confusion Matrix",
                 )
                 st.plotly_chart(fig_cm, width='stretch')
+            else:
+                st.info("Confusion-matrix data is not available in this model artifact.")
 
         with col_report:
             st.markdown("##### Detailed Classification Report")
@@ -67,6 +83,8 @@ with tab_phish:
             if rep_data:
                 rep_df = format_classification_report_table(rep_data)
                 st.dataframe(rep_df, width='stretch')
+            else:
+                st.info("Classification-report data is not available in this model artifact.")
 
             st.markdown(
                 f"""
@@ -91,10 +109,10 @@ with tab_net:
         n_metrics = n_meta.get("metrics", {})
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Champion Architecture", n_meta.get("selected_model", "Logistic Regression"))
-        c2.metric("Held-out Test Accuracy", f"{n_metrics.get('accuracy', 0.0):.2%}")
-        c3.metric("Attack Class Recall", f"{n_metrics.get('recall', 0.0):.2%}")
-        c4.metric("Attack Class F1-Score", f"{n_metrics.get('f1_score', 0.0):.2%}")
+        c1.metric("Champion architecture", n_meta.get("selected_model") or "N/A")
+        c2.metric("Held-out test accuracy", _format_metric(n_metrics, "accuracy"))
+        c3.metric("Attack class recall", _format_metric(n_metrics, "recall"))
+        c4.metric("Attack class F1 score", _format_metric(n_metrics, "f1_score"))
 
         st.divider()
 
@@ -109,6 +127,8 @@ with tab_net:
                     title="Network IDS Confusion Matrix",
                 )
                 st.plotly_chart(fig_ncm, width='stretch')
+            else:
+                st.info("Confusion-matrix data is not available in this model artifact.")
 
         with col_nrep:
             st.markdown("##### Detailed Classification Report")
@@ -116,13 +136,14 @@ with tab_net:
             if n_rep_data:
                 n_rep_df = format_classification_report_table(n_rep_data)
                 st.dataframe(n_rep_df, width='stretch')
+            else:
+                st.info("Classification-report data is not available in this model artifact.")
 
             st.markdown(
                 f"""
                 - **Training Partition:** {n_meta.get('train_samples', 'N/A')} flows (75%)
                 - **Held-out Test Partition:** {n_meta.get('test_samples', 'N/A')} flows (25%)
-                - **Class Distribution:** Benign ({n_meta.get('class_distribution', {}).get('benign', 'N/A')}), "
-                f"Attack ({n_meta.get('class_distribution', {}).get('attack', 'N/A')})"
+                - **Class Distribution:** Benign ({n_meta.get('class_distribution', {}).get('benign', 'N/A')}), Attack ({n_meta.get('class_distribution', {}).get('attack', 'N/A')})
                 """
             )
 
@@ -142,7 +163,7 @@ with tab_comp:
         get_phishing_metadata() if domain_sel == "Phishing Detection" else get_network_metadata()
     )
 
-    if meta_target and "all_models" in meta_target:
+    if meta_target and meta_target.get("all_models"):
         comp_fig = create_model_comparison_plot(
             meta_target["all_models"],
             title=f"Algorithm Benchmark Comparison — {domain_sel}",
